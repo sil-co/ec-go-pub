@@ -1,0 +1,40 @@
+# Go binary files
+/bin/
+/out/
+
+# Go package binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build artifacts
+*.test
+*.out
+*.a
+*.o
+*.prof
+
+# Dependency directories
+/vendor/
+Gopkg.lock
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Coverage files
+*.cov
+
+# Go modules
+go.sum
+
+/resources/**/*
+/docker-env/data/**/*

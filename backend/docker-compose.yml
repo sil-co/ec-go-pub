@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  mongo:
+    container_name: ec-mongo
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: ec-db
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: thepassofmongo
+    ports:
+      - 27017:27017
+    volumes:
+      - ./docker-env/data:/data/db
+      - ./docker-env/config:/data/configdb
+      - ./docker-env/scripts:/docker-entrypoint-initdb.d

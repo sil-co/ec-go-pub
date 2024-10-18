@@ -1,0 +1,6 @@
+
+.env
+node_modules
+/backend/docker-env/data
+/backend/docker-env/config
+
