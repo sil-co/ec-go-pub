@@ -15,7 +15,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 
+	"ec-api/controllers"
 	"ec-api/models"
 )
 
@@ -38,18 +40,66 @@ func connectMongoDB() {
 // ユーザー登録ハンドラ
 func createUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
-	_ = json.NewDecoder(r.Body).Decode(&user)
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// ユーザー情報のセットアップ
 	user.ID = primitive.NewObjectID()
 	user.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
 
+	// パスワードのハッシュ化
+	hashedPassword, err := hashPassword(user.Password)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+	user.Password = hashedPassword
+
+	// MongoDBにユーザーを保存
 	collection := client.Database("ec-db").Collection("users")
-	_, err := collection.InsertOne(context.TODO(), user)
+	_, err = collection.InsertOne(context.TODO(), user) // ここで `=` を使用
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	fmt.Printf("User created! Name: %s\n", user.Username)
-	json.NewEncoder(w).Encode(user)
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"message": "User registered"})
+}
+
+// ログイン処理
+func loginUser(w http.ResponseWriter, r *http.Request) {
+	var credentials struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&credentials)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// コンソールに資格情報を表示
+	log.Printf("Received login request: Email: %s, Password: %s", credentials.Email, credentials.Password)
+
+	var user models.User
+	collection := client.Database("ec-db").Collection("users")
+	err = collection.FindOne(context.TODO(), bson.M{"email": credentials.Email}).Decode(&user)
+	if err != nil {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	if !checkPasswordHash(credentials.Password, user.Password) {
+		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
 }
 
 // ユーザー一覧取得ハンドラ
@@ -123,6 +173,16 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
 func main() {
 	getEcDB()
 	connectMongoDB()
@@ -137,6 +197,12 @@ func main() {
 	r.HandleFunc("/user", createUser).Methods("POST")
 	// r.HandleFunc("/user", updateUser).Methods("PUT")
 	// r.HandleFunc("/user", deleteUser).Methods("DELETE")
+
+	// login
+	r.HandleFunc("/login", loginUser).Methods("POST")
+
+	// checkauth
+	r.HandleFunc("/auth", controllers.CheckAuth).Methods("POST")
 
 	// products
 	r.HandleFunc("/products", getProducts).Methods("GET")
