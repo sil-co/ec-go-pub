@@ -1,7 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
+import '../provider/cart_provider.dart';
+import 'product_detail_page.dart';
 import '../components/app_drower.dart';
 
 // 商品一覧ページ
@@ -23,12 +26,6 @@ class ProductsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Products'),
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back), // 戻るアイコン
-        //   onPressed: () {
-        //     Navigator.pop(context); // 前のページに戻る
-        //   },
-        // ),
       ),
       drawer: const AppDrawer(),
       body: FutureBuilder<List<dynamic>>(
@@ -100,6 +97,13 @@ class ProductsPage extends StatelessWidget {
                       ElevatedButton(
                         onPressed: () {
                           // ここに商品の詳細ページへの遷移処理を追加
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProductDetailPage(product: product),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent, // ボタンの色
@@ -109,6 +113,32 @@ class ProductsPage extends StatelessWidget {
                           ),
                         ),
                         child: const Text('View Details'),
+                      ),
+                      // ElevatedButton(
+                      //   onPressed: () {
+                      //     Provider.of<CartProvider>(context, listen: false)
+                      //         .addToCart(product);
+                      //   },
+                      //   child: const Text('Add to Cart'),
+                      // ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Provider.of<CartProvider>(context, listen: false)
+                              .addToCart(product);
+                        },
+                        icon: const Icon(Icons.add_shopping_cart, size: 20),
+                        label: const Text('Add to Cart'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange, // ボタンの背景色
+                          foregroundColor: Colors.white, // テキストとアイコンの色
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15), // 丸みを追加
+                          ),
+                          elevation: 5, // 影を追加
+                        ),
                       ),
                     ],
                   ),

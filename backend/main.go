@@ -1,160 +1,24 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
-	"time"
 
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"golang.org/x/crypto/bcrypt"
 
 	"ec-api/controllers"
-	"ec-api/models"
+	"ec-api/utils"
 )
 
-var client *mongo.Client
-
-// MongoDB接続設定
-func connectMongoDB() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	var err error
-	client, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://admin:thepassofmongo@localhost:27017"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("MongoDB connected!")
-}
-
-// ユーザー登録ハンドラ
-func createUser(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	// ユーザー情報のセットアップ
-	user.ID = primitive.NewObjectID()
-	user.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
-
-	// パスワードのハッシュ化
-	hashedPassword, err := hashPassword(user.Password)
-	if err != nil {
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
-		return
-	}
-	user.Password = hashedPassword
-
-	// MongoDBにユーザーを保存
-	collection := client.Database("ec-db").Collection("users")
-	_, err = collection.InsertOne(context.TODO(), user) // ここで `=` を使用
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Printf("User created! Name: %s\n", user.Username)
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"message": "User registered"})
-}
-
-// ログイン処理
-func loginUser(w http.ResponseWriter, r *http.Request) {
-	var credentials struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	err := json.NewDecoder(r.Body).Decode(&credentials)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// コンソールに資格情報を表示
-	log.Printf("Received login request: Email: %s, Password: %s", credentials.Email, credentials.Password)
-
-	var user models.User
-	collection := client.Database("ec-db").Collection("users")
-	err = collection.FindOne(context.TODO(), bson.M{"email": credentials.Email}).Decode(&user)
-	if err != nil {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	if !checkPasswordHash(credentials.Password, user.Password) {
-		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	}
-
-	json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
-}
-
-// ユーザー一覧取得ハンドラ
-func getUsers(w http.ResponseWriter, r *http.Request) {
-	collection := client.Database("ec-db").Collection("users")
-	cursor, err := collection.Find(context.TODO(), bson.M{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cursor.Close(context.TODO())
-
-	var users []models.User
-	for cursor.Next(context.TODO()) {
-		var user models.User
-		cursor.Decode(&user)
-		users = append(users, user)
-	}
-	json.NewEncoder(w).Encode(users)
-}
-
-// 商品一覧取得ハンドラ
-func getProducts(w http.ResponseWriter, r *http.Request) {
-	collection := client.Database("ec-db").Collection("products")
-	cursor, err := collection.Find(context.TODO(), bson.M{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cursor.Close(context.TODO())
-
-	var products []models.Product
-	for cursor.Next(context.TODO()) {
-		var product models.Product
-		cursor.Decode(&product)
-		products = append(products, product)
-	}
-	json.NewEncoder(w).Encode(products)
-}
-
-// 注文作成ハンドラ
-func createOrder(w http.ResponseWriter, r *http.Request) {
-	var order models.Order
-	_ = json.NewDecoder(r.Body).Decode(&order)
-	order.ID = primitive.NewObjectID()
-	order.OrderedAt = primitive.NewDateTimeFromTime(time.Now())
-
-	collection := client.Database("ec-db").Collection("orders")
-	_, err := collection.InsertOne(context.TODO(), order)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	json.NewEncoder(w).Encode(order)
-}
+var userCollection *mongo.Collection
+var productCollection *mongo.Collection
+var cartCollection *mongo.Collection
+var categoryCollection *mongo.Collection
+var orderCollection *mongo.Collection
+var couponsCollection *mongo.Collection
+var paymentCollection *mongo.Collection
 
 // cross origin許可
 func enableCORS(h http.Handler) http.Handler {
@@ -173,137 +37,102 @@ func enableCORS(h http.Handler) http.Handler {
 	})
 }
 
-func hashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
-
-func checkPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
-
 func main() {
-	getEcDB()
-	connectMongoDB()
+	utils.SaveCollections()
+
+	utils.ConnectMongoDB()
+
+	// MongoDBのコレクションを設定
+	userCollection = utils.GetMongoClient().Database("ec-db").Collection("users")
+	productCollection = utils.GetMongoClient().Database("ec-db").Collection("products")
+	cartCollection = utils.GetMongoClient().Database("ec-db").Collection("carts")
+	categoryCollection = utils.GetMongoClient().Database("ec-db").Collection("categories")
+	orderCollection = utils.GetMongoClient().Database("ec-db").Collection("orders")
+	couponsCollection = utils.GetMongoClient().Database("ec-db").Collection("coupons")
+	paymentCollection = utils.GetMongoClient().Database("ec-db").Collection("payments")
+
+	// コントローラーの初期化
+	controllers.InitUserController(userCollection)
+	controllers.InitProductController(productCollection)
+	controllers.InitCartController(cartCollection)
+	controllers.InitCategoryController(categoryCollection)
+	controllers.InitOrderController(orderCollection)
+	controllers.InitCouponController(couponsCollection)
+	controllers.InitPaymentController(paymentCollection)
+
 	r := mux.NewRouter()
 
 	// ルート設定 RESTfull設計
+
 	// users
-	r.HandleFunc("/users", getUsers).Methods("GET")
-
+	r.HandleFunc("/users", controllers.GetUsers).Methods("GET")
 	// user
-	// r.HandleFunc("/user", getUser).Methods("GET")
-	r.HandleFunc("/user", createUser).Methods("POST")
-	// r.HandleFunc("/user", updateUser).Methods("PUT")
-	// r.HandleFunc("/user", deleteUser).Methods("DELETE")
-
+	// r.HandleFunc("/user", controllers.getUser).Methods("GET")
+	r.HandleFunc("/user", controllers.AddToUser).Methods("POST")
+	// r.HandleFunc("/user", controllers.updateUser).Methods("PUT")
+	// r.HandleFunc("/user", controllers.deleteUser).Methods("DELETE")
 	// login
-	r.HandleFunc("/login", loginUser).Methods("POST")
-
+	r.HandleFunc("/login", controllers.LoginUser).Methods("POST")
 	// checkauth
 	r.HandleFunc("/auth", controllers.CheckAuth).Methods("POST")
 
-	// products
-	r.HandleFunc("/products", getProducts).Methods("GET")
+	// carts
+	r.HandleFunc("/carts", controllers.GetCarts).Methods("GET")
+	// cart
+	r.HandleFunc("/cart", controllers.GetCart).Methods("GET")
+	r.HandleFunc("/cart", controllers.AddToCart).Methods("POST")
+	// r.HandleFunc("/cart", controllers.UpdateCart).Methods("PUT")
+	// r.HandleFunc("/cart", controllers.DeleteCart).Methods("DELETE")
 
+	// products
+	r.HandleFunc("/products", controllers.GetProducts).Methods("GET")
 	// product
-	// r.HandleFunc("/product", getProduct).Methods("GET")
-	// r.HandleFunc("/product", createProduct).Methods("POST")
-	// r.HandleFunc("/product", updateProduct).Methods("PUT")
-	// r.HandleFunc("/product", deleteProduct).Methods("DELETE")
+	// r.HandleFunc("/product", controllers.getProduct).Methods("GET")
+	// r.HandleFunc("/product", controllers.createProduct).Methods("POST")
+	// r.HandleFunc("/product", controllers.updateProduct).Methods("PUT")
+	// r.HandleFunc("/product", controllers.deleteProduct).Methods("DELETE")
+
+	// categories
+	r.HandleFunc("/categories", controllers.GetCategories).Methods("GET")
+	// category
+	// r.HandleFunc("/category", controllers.getCategory).Methods("GET")
+	r.HandleFunc("/category", controllers.AddToCategory).Methods("POST")
+	// r.HandleFunc("/category", controllers.updateCategory).Methods("PUT")
+	// r.HandleFunc("/category", controllers.deleteCategory).Methods("DELETE")
 
 	// orders
-	// r.HandleFunc("/orders", getOrders).Methods("GET")
-	// r.HandleFunc("/orders", createOrders).Methods("POST")
-	// r.HandleFunc("/orders", updateOrders).Methods("PUT")
-	// r.HandleFunc("/orders", deleteOrders).Methods("DELETE")
-
+	// r.HandleFunc("/orders", controllers.getOrders).Methods("GET")
+	// r.HandleFunc("/orders", controllers.createOrders).Methods("POST")
+	// r.HandleFunc("/orders", controllers.updateOrders).Methods("PUT")
+	// r.HandleFunc("/orders", controllers.deleteOrders).Methods("DELETE")
 	// order
-	// r.HandleFunc("/order", getOrder).Methods("GET")
-	r.HandleFunc("/order", createOrder).Methods("POST")
-	// r.HandleFunc("/order", updateOrder).Methods("PUT")
-	// r.HandleFunc("/order", deleteOrder).Methods("DELETE")
+	// r.HandleFunc("/order", controllers.getOrder).Methods("GET")
+	r.HandleFunc("/order", controllers.AddToOrder).Methods("POST")
+	// r.HandleFunc("/order", controllers.updateOrder).Methods("PUT")
+	// r.HandleFunc("/order", controllers.deleteOrder).Methods("DELETE")
+
+	// coupons
+	r.HandleFunc("/coupons", controllers.GetCoupons).Methods("GET")
+	// r.HandleFunc("/coupons", controllers.createCoupons).Methods("POST")
+	// r.HandleFunc("/coupons", controllers.updateCoupons).Methods("PUT")
+	// r.HandleFunc("/coupons", controllers.deleteCoupons).Methods("DELETE")
+	// coupon
+	// r.HandleFunc("/coupon", controllers.getCoupon).Methods("GET")
+	r.HandleFunc("/coupon", controllers.AddToCoupon).Methods("POST")
+	// r.HandleFunc("/coupon", controllers.updateCoupon).Methods("PUT")
+	// r.HandleFunc("/coupon", controllers.deleteCoupon).Methods("DELETE")
+
+	// payments
+	r.HandleFunc("/payments", controllers.GetPayments).Methods("GET")
+	// r.HandleFunc("/payments", controllers.createPayments).Methods("POST")
+	// r.HandleFunc("/payments", controllers.updatePayments).Methods("PUT")
+	// r.HandleFunc("/payments", controllers.deletePayments).Methods("DELETE")
+	// payment
+	// r.HandleFunc("/payment", controllers.getPayment).Methods("GET")
+	r.HandleFunc("/payment", controllers.AddToPayment).Methods("POST")
+	// r.HandleFunc("/payment", controllers.updatePayment).Methods("PUT")
+	// r.HandleFunc("/payment", controllers.deletePayment).Methods("DELETE")
 
 	fmt.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", enableCORS(r)))
-}
-
-func getEcDB() {
-	// MongoDBに接続
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://admin:thepassofmongo@localhost:27017"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	// データベース取得
-	database := client.Database("ec-db")
-
-	// 現在のディレクトリからパスを組み立てる
-	saveDir, err := filepath.Abs("./resources/backup/ecdb")
-	if err != nil {
-		log.Fatalf("パスの解決に失敗しました: %v", err)
-	}
-
-	// ディレクトリが存在しない場合は作成
-	if err := os.MkdirAll(saveDir, 0755); err != nil {
-		log.Fatalf("Failed to create directory %s: %v", saveDir, err)
-	}
-
-	// データベース内のコレクション一覧を取得
-	collections, err := database.ListCollectionNames(ctx, bson.M{})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// 各コレクションのデータをJSON形式で保存
-	for _, collectionName := range collections {
-		if err := exportCollectionToJSON(ctx, database, collectionName, saveDir); err != nil {
-			log.Fatalf("Failed to export collection %s: %v", collectionName, err)
-		}
-	}
-
-	fmt.Println("すべてのコレクションのデータをJSONファイルに保存しました。")
-}
-
-// コレクションのデータをJSON形式でファイルに保存する関数
-func exportCollectionToJSON(ctx context.Context, db *mongo.Database, collectionName string, saveDir string) error {
-	collection := db.Collection(collectionName)
-
-	// 全ドキュメント取得
-	cursor, err := collection.Find(ctx, bson.M{})
-	if err != nil {
-		return err
-	}
-	defer cursor.Close(ctx)
-
-	var documents []bson.M
-	if err = cursor.All(ctx, &documents); err != nil {
-		return err
-	}
-
-	// JSON形式に変換
-	data, err := json.MarshalIndent(documents, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	fileName := fmt.Sprintf("%s.json", collectionName)
-	filePath := filepath.Join(saveDir, fileName)
-
-	// JSONファイルに保存
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
-		return err
-	}
-
-	fmt.Printf("コレクション %s を %s に保存しました。\n", collectionName, fileName)
-	return nil
 }

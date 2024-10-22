@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../components/app_drower.dart';
+
 // ユーザー一覧ページ
 class UsersPage extends StatelessWidget {
   const UsersPage({super.key});
@@ -19,6 +21,7 @@ class UsersPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Users')),
+      drawer: const AppDrawer(),
       body: FutureBuilder<List<dynamic>>(
         future: fetchUsers(),
         builder: (context, snapshot) {

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../utils/auth_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'home_page.dart';
 import 'login_page.dart';
 
@@ -20,28 +21,54 @@ class _SignupPageState extends State<SignupPage> {
 
   Future<void> _signup() async {
     final url = Uri.parse('http://localhost:8080/user'); // 新規登録用のエンドポイント
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'username': usernameController.text,
-        'email': emailController.text,
-        'password': passwordController.text,
-      }),
-    );
-
-    if (response.statusCode == 201) {
-      // 新規登録成功
-      await authService.login(); // 自動的にログイン
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': usernameController.text,
+          'email': emailController.text,
+          'password': passwordController.text,
+        }),
       );
-    } else {
-      final message = jsonDecode(response.body)['message'];
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+
+      if (response.statusCode == 201) {
+        // 新規登録成功
+        await authService.login(); // 自動的にログイン
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      } else {
+        final message = jsonDecode(response.body)['message'];
+        _showSnackbar(message);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(message)));
+      }
+    } catch (e) {
+      _showSnackbar('An error occurred. Please try again.');
     }
+  }
+
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM, // トーストの表示位置
+      backgroundColor: Colors.redAccent,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3), // 表示時間を設定
+        backgroundColor: Colors.redAccent, // 背景色を赤に設定
+      ),
+    );
   }
 
   @override

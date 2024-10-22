@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../provider/cart_provider.dart';
 import '../utils/auth_service.dart';
 import '../pages/login_page.dart';
 import '../pages/product_page.dart';
@@ -16,6 +18,8 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AuthService authService = AuthService();
+    final cartProvider = Provider.of<CartProvider>(context);
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -29,12 +33,19 @@ class AppDrawer extends StatelessWidget {
           ),
           ListTile(
             leading: const Icon(Icons.shopping_cart),
-            title: const Text('Products'),
+            title: const Text('All Products'),
             onTap: () {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const ProductsPage()),
               );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.list), // ここでアイコンを指定
+            title: const Text('My Products'),
+            onTap: () {
+              // Item Listedのタップ時の処理をここに追加
             },
           ),
           ListTile(
@@ -51,6 +62,14 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.shopping_basket),
             title: const Text('Cart'),
+            trailing: Chip(
+              // アイテム数を表示するためのChipウィジェット
+              label: Text(
+                '${cartProvider.itemCount}', // カートのアイテム数
+                style: const TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red, // Chipの背景色を設定
+            ),
             onTap: () {
               Navigator.pushReplacement(
                 context,

@@ -1,67 +1,133 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
+import '../provider/cart_provider.dart';
 import '../components/app_drower.dart';
-import '../utils/auth_service.dart';
-import 'package:flutter/foundation.dart';
 
-class Order {
-  final String id;
-  final String userId;
-  final List<OrderProduct> products;
-  final double totalAmount;
-  final String status;
-  final DateTime orderedAt;
-
-  Order({
-    required this.id,
-    required this.userId,
-    required this.products,
-    required this.totalAmount,
-    required this.status,
-    required this.orderedAt,
-  });
-}
-
-class OrderProduct {
-  final String productId;
-  final int quantity;
-
-  OrderProduct({
-    required this.productId,
-    required this.quantity,
-  });
-}
-
-// 買い物かごページ
 class CartPage extends StatelessWidget {
-  // final String username;
-  // final String token;
-
-  // const CartPage({super.key, required this.username, required this.token});
   const CartPage({super.key});
-
-  // Future<void> _checkAuthentication(BuildContext context) async {
-  //   final AuthService authService = AuthService();
-  //   bool isAuthenticated = await authService.checkAuth(username, token);
-  //   if (!isAuthenticated) {
-  //     Navigator.pushReplacementNamed(context, '/login');
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
-    // _checkAuthentication(context);
+    final cart = Provider.of<CartProvider>(context);
+    final cartItems = cart.cartItems;
+
+    double getTotalAmount() {
+      return cartItems.fold(0, (sum, item) => sum + item['price']);
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order History'),
+        title: const Text('My Cart'),
       ),
       drawer: const AppDrawer(),
-      body: Center(
-        child: const Text('ここにカートを表示します'),
-      ),
+      body: cartItems.isEmpty
+          ? const Center(
+              child: Text(
+                'My cart is empty!',
+                style: TextStyle(fontSize: 18),
+              ),
+            )
+          : Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: cart.itemCount,
+                    itemBuilder: (context, index) {
+                      final product = cartItems[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        child: ListTile(
+                          leading: Image.asset(
+                            product['imageUrl'] ?? 'assets/no_image.jpg',
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                          title: Text(
+                            product['name'],
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          subtitle: Text(
+                            '\$${product['price'].toStringAsFixed(2)}',
+                            style: const TextStyle(
+                                color: Colors.green, fontSize: 14),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.remove_circle_outline,
+                                color: Colors.red),
+                            onPressed: () {
+                              cart.removeFromCart(product);
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const Divider(height: 1, thickness: 1),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Total:',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '\$${getTotalAmount().toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // 購入処理のロジックを追加
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Order Confirmed'),
+                          content: const Text('Thank you for your purchase!'),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.payment),
+                    label: const Text('Proceed to Checkout'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      elevation: 5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
