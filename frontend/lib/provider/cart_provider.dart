@@ -2,36 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../utils/auth_service.dart';
+
 class CartProvider with ChangeNotifier {
   final List<Map<String, dynamic>> _cartItems = [];
   final String apiUrl = 'http://localhost:8080/cart';
+  final AuthService authService = AuthService();
 
   List<Map<String, dynamic>> get cartItems => _cartItems;
 
-  void addToCart(Map<String, dynamic> product) async {
-    _cartItems.add(product);
-    notifyListeners(); // リスナーに通知してUIを更新
+  Future<void> addToCart(Map<String, dynamic> product) async {
+    try {
+      final token = await authService.getToken();
+      if (token == null) {
+        throw Exception('No token found');
+      }
 
-    // APIにカートを追加
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': 'ユーザーIDをここに', // 適切なユーザーIDを使用
-        'products': [
-          {
-            'productId': product['id'], // 商品IDを指定
-            'quantity': 1 // 数量を指定
-          }
-        ],
-      }),
-    );
+      // APIにカートを追加
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'token': token, // 適切なユーザーIDを使用
+          'products': [
+            {
+              'productId': product['id'], // 商品IDを指定
+              'quantity': 1 // 数量を指定
+            }
+          ],
+        }),
+      );
 
-    if (response.statusCode == 201) {
-      // カートへの追加成功
-    } else {
-      // エラー処理
-      throw Exception('Failed to add to cart');
+      if (response.statusCode == 201) {
+        // カートへの追加成功
+        _cartItems.add(product);
+        notifyListeners(); // リスナーに通知してUIを更新
+      } else {
+        // エラー処理
+        throw Exception('Failed to add to cart');
+      }
+    } catch (e) {
+      // エラーメッセージをログに出力
+      print('Error adding to cart: $e');
+      throw e; // エラーを再スロー
     }
   }
 

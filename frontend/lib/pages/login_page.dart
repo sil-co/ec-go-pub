@@ -19,26 +19,42 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _login() async {
     final url = Uri.parse('http://localhost:8080/login');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': emailController.text,
-        'password': passwordController.text,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      await authService.login();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomePage()),
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': emailController.text,
+          'password': passwordController.text,
+        }),
       );
-    } else {
-      final message = jsonDecode(response.body)['message'];
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        String token = data['token'];
+        await authService.login(token);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      } else {
+        await authService.logout();
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to login.')));
+      }
+    } catch (e) {
+      _showSnackbar('An error occurred. Please try again.');
     }
+  }
+
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 3), // 表示時間を設定
+        backgroundColor: Colors.redAccent, // 背景色を赤に設定
+      ),
+    );
   }
 
   @override

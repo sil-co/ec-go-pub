@@ -2,12 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../utils/auth_service.dart';
 import 'login_page.dart';
-import 'product_page.dart';
 import '../components/app_drower.dart';
-import 'cart_page.dart';
-import 'order_history_page.dart';
-import 'user_profile_page.dart';
-import 'users_page.dart';
 import 'intro_page.dart';
 
 class HomePage extends StatelessWidget {

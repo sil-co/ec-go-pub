@@ -48,10 +48,17 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuthStatus() async {
-    final loggedIn = await authService.isLoggedIn();
-    setState(() {
-      isLoggedIn = loggedIn;
-    });
+    final token = await authService.getToken(); // トークンを取得
+    if (token != null) {
+      final loggedIn = await authService.checkAuth(token); // 認証確認
+      setState(() {
+        isLoggedIn = loggedIn; // 認証状態を反映
+      });
+    } else {
+      setState(() {
+        isLoggedIn = false;
+      });
+    }
   }
 
   @override
@@ -66,6 +73,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
       return const HomePage();
     } else {
       // 未認証ならLoginPageへ
+      authService.logout();
       return const LoginPage();
     }
   }

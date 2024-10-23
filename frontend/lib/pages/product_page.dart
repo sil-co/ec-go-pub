@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../provider/cart_provider.dart';
 import 'product_detail_page.dart';
 import '../components/app_drower.dart';
+import '../utils/snackbar_utils.dart';
 
 // 商品一覧ページ
 class ProductsPage extends StatelessWidget {
@@ -123,9 +124,14 @@ class ProductsPage extends StatelessWidget {
                       // ),
                       const SizedBox(height: 8),
                       ElevatedButton.icon(
-                        onPressed: () {
-                          Provider.of<CartProvider>(context, listen: false)
-                              .addToCart(product);
+                        onPressed: () async {
+                          try {
+                            await Provider.of<CartProvider>(context,
+                                    listen: false)
+                                .addToCart(product);
+                          } catch (e) {
+                            showSnackbar(context, 'Failed to add to cart');
+                          }
                         },
                         icon: const Icon(Icons.add_shopping_cart, size: 20),
                         label: const Text('Add to Cart'),

@@ -34,16 +34,20 @@ class _SignupPageState extends State<SignupPage> {
 
       if (response.statusCode == 201) {
         // 新規登録成功
-        await authService.login(); // 自動的にログイン
+        final data = jsonDecode(response.body);
+        String token = data['token'];
+        await authService.login(token); // 自動的にログイン
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomePage()),
         );
       } else {
-        final message = jsonDecode(response.body)['message'];
+        await authService.logout();
+        final message = 'Failed to login';
         _showSnackbar(message);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(message)));
+        // ScaffoldMessenger.of(context)
+        //     .showSnackBar(SnackBar(content: Text(message)));
+        // _showToast(message)
       }
     } catch (e) {
       _showSnackbar('An error occurred. Please try again.');
