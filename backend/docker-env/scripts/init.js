@@ -45,25 +45,28 @@ db.categories.insertMany([
 // 商品データの挿入
 db.products.insertMany([
   {
+    userId: db.users.findOne({ username: "user1" })._id,
     name: "Smartphone",
     description: "Latest model with high specs",
-    price: 699.99,
+    price: 6999,
     stock: 50,
     category: "Electronics",
     createdAt: new Date(),
   },
   {
+    userId: db.users.findOne({ username: "user1" })._id,
     name: "Novel",
     description: "A best-selling novel",
-    price: 19.99,
+    price: 1999,
     stock: 200,
     category: "Books",
     createdAt: new Date(),
   },
   {
+    userId: db.users.findOne({ username: "user1" })._id,
     name: "T-Shirt",
     description: "Comfortable cotton t-shirt",
-    price: 9.99,
+    price: 999,
     stock: 100,
     category: "Clothing",
     createdAt: new Date(),

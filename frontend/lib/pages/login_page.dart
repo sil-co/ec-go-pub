@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
+import '../utils/snackbar_utils.dart';
 import '../utils/auth_service.dart';
 import 'home_page.dart';
 import 'signup_page.dart';
@@ -39,22 +41,11 @@ class _LoginPageState extends State<LoginPage> {
         );
       } else {
         await authService.logout();
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed to login.')));
+        showErrorSnackbar(context, 'Failed to login.');
       }
     } catch (e) {
-      _showSnackbar('An error occurred. Please try again.');
+      showErrorSnackbar(context, 'Invalid email or password.');
     }
-  }
-
-  void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 3), // 表示時間を設定
-        backgroundColor: Colors.redAccent, // 背景色を赤に設定
-      ),
-    );
   }
 
   @override

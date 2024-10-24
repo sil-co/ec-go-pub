@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+
+import '../utils/snackbar_utils.dart';
 import '../utils/auth_service.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'home_page.dart';
 import 'login_page.dart';
 
@@ -32,7 +33,7 @@ class _SignupPageState extends State<SignupPage> {
         }),
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode >= 200 && response.statusCode < 300) {
         // 新規登録成功
         final data = jsonDecode(response.body);
         String token = data['token'];
@@ -43,36 +44,12 @@ class _SignupPageState extends State<SignupPage> {
         );
       } else {
         await authService.logout();
-        final message = 'Failed to login';
-        _showSnackbar(message);
-        // ScaffoldMessenger.of(context)
-        //     .showSnackBar(SnackBar(content: Text(message)));
-        // _showToast(message)
+        final message = 'Failed to signup';
+        showErrorSnackbar(context, message);
       }
     } catch (e) {
-      _showSnackbar('An error occurred. Please try again.');
+      showErrorSnackbar(context, 'An error occurred. Please try again.');
     }
-  }
-
-  void _showToast(String message) {
-    Fluttertoast.showToast(
-      msg: message,
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.BOTTOM, // トーストの表示位置
-      backgroundColor: Colors.redAccent,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
-
-  void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 3), // 表示時間を設定
-        backgroundColor: Colors.redAccent, // 背景色を赤に設定
-      ),
-    );
   }
 
   @override

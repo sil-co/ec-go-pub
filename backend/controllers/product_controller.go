@@ -96,12 +96,29 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddToProduct(w http.ResponseWriter, r *http.Request) {
+	// AuthorizationヘッダーからJWTトークンを取得
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := ValidateJWT(tokenString)
+	userID := claims.UserID
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
 	var product models.Product
-	err := json.NewDecoder(r.Body).Decode(&product)
+	err = json.NewDecoder(r.Body).Decode(&product)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	// 受け取ったuserIDをProductに追加
+	product.UserID = userID
 
 	_, err = productCollection.InsertOne(context.TODO(), product)
 	if err != nil {

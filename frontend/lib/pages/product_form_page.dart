@@ -4,6 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
 
 import '../components/app_drower.dart';
+import '../utils/auth_service.dart';
+import '../utils/snackbar_utils.dart';
 
 class ProductFormPage extends StatefulWidget {
   const ProductFormPage({super.key});
@@ -22,30 +24,44 @@ class _ProductFormPageState extends State<ProductFormPage> {
   final TextEditingController _stockController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
 
+  final AuthService authService = AuthService();
+
   Future<void> _submitProduct() async {
-    if (_formKey.currentState!.validate()) {
-      final url = Uri.parse('http://localhost:8080/products');
+    try {
+      if (_formKey.currentState!.validate()) {
+        final token = await authService.getToken();
+        if (token == null) {
+          throw Exception('No token found');
+        }
 
-      final product = {
-        "name": _nameController.text,
-        "description": _descriptionController.text,
-        "price": double.tryParse(_priceController.text) ?? 0.0,
-        "stock": int.tryParse(_stockController.text) ?? 0,
-        "category": _categoryController.text,
-      };
+        final url = Uri.parse('http://localhost:8080/product');
+        final product = {
+          "name": _nameController.text,
+          "description": _descriptionController.text,
+          "price": double.tryParse(_priceController.text) ?? 0.0,
+          "stock": int.tryParse(_stockController.text) ?? 0,
+          "category": _categoryController.text,
+        };
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(product),
-      );
+        final response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token,
+          },
+          body: jsonEncode(product),
+        );
 
-      if (response.statusCode == 201) {
-        Fluttertoast.showToast(msg: "Product created successfully!");
-        _clearForm();
-      } else {
-        Fluttertoast.showToast(msg: "Failed to create product.");
+        if (response.statusCode == 201) {
+          showSuccessSnackbar(context, "Product created successfully!");
+          _clearForm();
+        } else {
+          Fluttertoast.showToast(msg: "Failed to create product.");
+        }
       }
+    } catch (e) {
+      print(e);
+      showErrorSnackbar(context, 'Failed to create.');
     }
   }
 

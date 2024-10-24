@@ -39,28 +39,90 @@ class CartPage extends StatelessWidget {
                         margin: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         child: ListTile(
-                          leading: Image.asset(
-                            product['imageUrl'] ?? 'assets/no_image.jpg',
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
+                          leading: Container(
+                            // コンテナでラップする
+                            width: 100, // 幅を固定
+                            height: 100, // 高さを固定
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage(product['imageUrl'] ??
+                                    'assets/no_image.jpg'),
+                                fit: BoxFit.contain,
+                              ),
+                            ),
                           ),
-                          title: Text(
-                            product['name'],
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16),
+                          // title: Text(
+                          //   product['name'],
+                          //   style: const TextStyle(
+                          //       fontWeight: FontWeight.bold, fontSize: 16),
+                          // ),
+                          subtitle: Column(
+                            // RowからColumnに変更
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product['name'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Row(
+                                // 価格と数量をRowで横並びに
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '￥${product['price'].toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10), // スペースを追加
+                                  Text(
+                                    'Quantity: ${product['quantity']}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey, // 色を変えて目立たなくする
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          subtitle: Text(
-                            '\$${product['price'].toStringAsFixed(2)}',
-                            style: const TextStyle(
-                                color: Colors.green, fontSize: 14),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: Colors.red),
-                            onPressed: () {
-                              cart.removeFromCart(product);
-                            },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min, // Rowのサイズを最小限に
+                            children: [
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.remove, color: Colors.red),
+                                onPressed: () {
+                                  // 数量を減らす処理
+                                  // cart.decreaseQuantity(product);
+                                },
+                              ),
+                              // Text(
+                              //   '${product['quantity']}', // 現在の数量を表示
+                              //   style: const TextStyle(fontSize: 16),
+                              // ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.add, color: Colors.green),
+                                onPressed: () {
+                                  // 数量を増やす処理
+                                  // cart.increaseQuantity(product);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline,
+                                    color: Colors.red),
+                                onPressed: () {
+                                  // 商品をカートから削除する処理
+                                  cart.removeFromCart(product);
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       );

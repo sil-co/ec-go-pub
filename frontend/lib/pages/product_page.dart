@@ -39,8 +39,8 @@ class ProductsPage extends StatelessWidget {
           } else {
             return GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, // 2列で表示
-                childAspectRatio: 1, // 高さと幅の比率を調整（0.5に変更）
+                crossAxisCount: 3, // 列
+                childAspectRatio: 1, // 高さと幅の比率を調整
                 crossAxisSpacing: 12.0, // 列間のスペース
                 mainAxisSpacing: 12.0, // 行間のスペース
               ),
@@ -87,7 +87,7 @@ class ProductsPage extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8.0),
                         child: Text(
-                          '\$${product['price'].toStringAsFixed(2)}',
+                          '￥${product['price'].toStringAsFixed(0)}',
                           style: const TextStyle(
                             color: Colors.green,
                             fontSize: 12, // フォントサイズを調整
@@ -129,8 +129,9 @@ class ProductsPage extends StatelessWidget {
                             await Provider.of<CartProvider>(context,
                                     listen: false)
                                 .addToCart(product);
+                            showSuccessSnackbar(context, 'Added to Cart');
                           } catch (e) {
-                            showSnackbar(context, 'Failed to add to cart');
+                            showErrorSnackbar(context, 'Failed to add to cart');
                           }
                         },
                         icon: const Icon(Icons.add_shopping_cart, size: 20),
