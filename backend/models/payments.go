@@ -7,7 +7,7 @@ import (
 
 type Payment struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	OrderID       primitive.ObjectID `bson:"orderId" json:"orderId"`
+	OrderID       primitive.ObjectID `bson:"orderID" json:"orderID"`
 	Amount        float64            `bson:"amount" json:"amount"`
 	PaymentMethod string             `bson:"paymentMethod" json:"paymentMethod"`
 	Status        string             `bson:"status" json:"status"`

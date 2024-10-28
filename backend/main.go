@@ -101,7 +101,7 @@ func main() {
 	// r.HandleFunc("/category", controllers.deleteCategory).Methods("DELETE")
 
 	// orders
-	// r.HandleFunc("/orders", controllers.getOrders).Methods("GET")
+	r.HandleFunc("/orders", controllers.GetOrders).Methods("GET")
 	// r.HandleFunc("/orders", controllers.createOrders).Methods("POST")
 	// r.HandleFunc("/orders", controllers.updateOrders).Methods("PUT")
 	// r.HandleFunc("/orders", controllers.deleteOrders).Methods("DELETE")

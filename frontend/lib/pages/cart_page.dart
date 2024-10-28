@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 
 import '../provider/cart_provider.dart';
 import '../components/app_drower.dart';
+import '../utils/auth_service.dart';
 
 class CartPage extends StatelessWidget {
-  const CartPage({super.key});
+  CartPage({super.key});
+  final AuthService authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +17,8 @@ class CartPage extends StatelessWidget {
     final cartItems = cart.cartItems;
 
     double getTotalAmount() {
-      return cartItems.fold(0, (sum, item) => sum + item['price']);
+      double total = cartItems.fold(0.0, (sum, item) => sum + item['price']);
+      return total.ceilToDouble(); // 合計を切り上げ
     }
 
     return Scaffold(
@@ -72,7 +77,7 @@ class CartPage extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '￥${product['price'].toStringAsFixed(2)}',
+                                    '￥${product['price'].toStringAsFixed(0)}',
                                     style: const TextStyle(
                                       color: Colors.green,
                                       fontSize: 14,
@@ -143,7 +148,7 @@ class CartPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '\$${getTotalAmount().toStringAsFixed(2)}',
+                        '￥${getTotalAmount().toStringAsFixed(0)}',
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -156,23 +161,17 @@ class CartPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: ElevatedButton.icon(
-                    onPressed: () {
+                    onPressed: () async {
                       // 購入処理のロジックを追加
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Order Confirmed'),
-                          content: const Text('Thank you for your purchase!'),
-                          actions: [
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                      );
+                      // Todo: Stripe処理を追加
+                      final order = {
+                        // "products": [...cartItems],
+                        "products": getProductsForOrder(cartItems),
+                        "totalAmount": getTotalAmount(),
+                        "status": "Pending"
+                      };
+                      print(order);
+                      await submitOrder(context, order);
                     },
                     icon: const Icon(Icons.payment),
                     label: const Text('Proceed to Checkout'),
@@ -190,6 +189,82 @@ class CartPage extends StatelessWidget {
                 ),
               ],
             ),
+    );
+  }
+
+// カートアイテムから必要な情報を抽出する関数
+  List<Map<String, dynamic>> getProductsForOrder(
+      List<Map<String, dynamic>> cartItems) {
+    return cartItems.map((product) {
+      return {
+        'productId': product['productId'], // productIdのみ
+        'quantity': product['quantity'], // quantityのみ
+      };
+    }).toList();
+  }
+
+  Future<void> submitOrder(
+      BuildContext context, Map<String, dynamic> order) async {
+    final token = await authService.getToken();
+    if (token == null) {
+      throw Exception('No token found');
+    }
+    const url = 'http://localhost:8080/order'; // API endpoint
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': token, // Attach JWT token in the header.
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: jsonEncode(order),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        _showConfirmationDialog(context, 'Thank you for your purchase!');
+      } else {
+        _showErrorDialog(context, 'Failed to place order.');
+      }
+    } catch (e) {
+      _showErrorDialog(context, 'Error: $e');
+    }
+  }
+
+  void _showConfirmationDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Order Confirmed'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     );
   }
 }

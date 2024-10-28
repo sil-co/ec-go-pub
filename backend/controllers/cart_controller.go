@@ -15,7 +15,7 @@ import (
 )
 
 type CartProductDetail struct {
-	ProductID   primitive.ObjectID `json:"productId"`
+	ProductID   primitive.ObjectID `json:"productID"`
 	Quantity    int                `json:"quantity"`
 	Name        string             `json:"name"`
 	Description string             `json:"description"`
@@ -49,7 +49,7 @@ func GetCarts(w http.ResponseWriter, r *http.Request) {
 	var cart models.Cart
 	var productDetails []CartProductDetail
 
-	err = cartCollection.FindOne(context.TODO(), bson.M{"userId": userID}).Decode(&cart)
+	err = cartCollection.FindOne(context.TODO(), bson.M{"userID": userID}).Decode(&cart)
 	if err != nil {
 		// カートがまだ登録されていない場合は、空のカートを返す
 		cart = models.Cart{
@@ -89,9 +89,9 @@ func GetCarts(w http.ResponseWriter, r *http.Request) {
 
 // cart
 func GetCart(w http.ResponseWriter, r *http.Request) {
-	userID := r.URL.Query().Get("userId") // クエリパラメータからユーザーIDを取得
+	userID := r.URL.Query().Get("userID") // クエリパラメータからユーザーIDを取得
 	var cart models.Cart
-	err := cartCollection.FindOne(context.TODO(), bson.M{"userId": userID}).Decode(&cart)
+	err := cartCollection.FindOne(context.TODO(), bson.M{"userID": userID}).Decode(&cart)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -124,7 +124,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 
 	// 既存のカートを取得
 	var existingCart models.Cart
-	err = cartCollection.FindOne(context.TODO(), bson.M{"userId": userID}).Decode(&existingCart)
+	err = cartCollection.FindOne(context.TODO(), bson.M{"userID": userID}).Decode(&existingCart)
 
 	if err == mongo.ErrNoDocuments {
 		// カートが存在しない場合、新しいカートを作成
@@ -170,7 +170,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	// カートを更新
 	_, err = cartCollection.UpdateOne(
 		context.TODO(),
-		bson.M{"userId": userID},
+		bson.M{"userID": userID},
 		bson.M{"$set": existingCart},
 	)
 

@@ -43,7 +43,7 @@ class ProductDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '￥${product['price'].toStringAsFixed(2)}',
+                  '￥${product['price'].toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w500,

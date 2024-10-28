@@ -45,7 +45,7 @@ db.categories.insertMany([
 // 商品データの挿入
 db.products.insertMany([
   {
-    userId: db.users.findOne({ username: "user1" })._id,
+    userID: db.users.findOne({ username: "user1" })._id,
     name: "Smartphone",
     description: "Latest model with high specs",
     price: 6999,
@@ -54,7 +54,7 @@ db.products.insertMany([
     createdAt: new Date(),
   },
   {
-    userId: db.users.findOne({ username: "user1" })._id,
+    userID: db.users.findOne({ username: "user1" })._id,
     name: "Novel",
     description: "A best-selling novel",
     price: 1999,
@@ -63,7 +63,7 @@ db.products.insertMany([
     createdAt: new Date(),
   },
   {
-    userId: db.users.findOne({ username: "user1" })._id,
+    userID: db.users.findOne({ username: "user1" })._id,
     name: "T-Shirt",
     description: "Comfortable cotton t-shirt",
     price: 999,
@@ -76,13 +76,13 @@ db.products.insertMany([
 // 注文データの挿入
 db.orders.insertMany([
   {
-    userId: db.users.findOne({ username: "user1" })._id,
+    userID: db.users.findOne({ username: "user1" })._id,
     products: [
       {
-        productId: db.products.findOne({ name: "Smartphone" })._id,
+        productID: db.products.findOne({ name: "Smartphone" })._id,
         quantity: 1,
       },
-      { productId: db.products.findOne({ name: "Novel" })._id, quantity: 2 },
+      { productID: db.products.findOne({ name: "Novel" })._id, quantity: 2 },
     ],
     totalAmount: 739.97,
     status: "pending",
@@ -92,10 +92,10 @@ db.orders.insertMany([
 
 db.carts.insertMany([
   {
-    userId: db.users.findOne({ username: "user1" })._id, // カート所有者
+    userID: db.users.findOne({ username: "user1" })._id, // カート所有者
     products: [
-      { productId: db.products.findOne({ name: "T-Shirt" })._id, quantity: 2 },
-      { productId: db.products.findOne({ name: "Novel" })._id, quantity: 1 },
+      { productID: db.products.findOne({ name: "T-Shirt" })._id, quantity: 2 },
+      { productID: db.products.findOne({ name: "Novel" })._id, quantity: 1 },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -104,7 +104,7 @@ db.carts.insertMany([
 
 db.payments.insertMany([
   {
-    orderId: db.orders.findOne({ status: "pending" })._id,
+    orderID: db.orders.findOne({ status: "pending" })._id,
     amount: 739.97,
     paymentMethod: "credit_card", // クレジットカード、PayPalなど
     status: "completed",

@@ -157,7 +157,7 @@ func AddToUser(w http.ResponseWriter, r *http.Request) {
 
 	// response := map[string]interface{}{
 	// 	"message": "Signup successful",
-	// 	"userId":  user.ID.Hex(), // ObjectIDを文字列に変換
+	// 	"userID":  user.ID.Hex(), // ObjectIDを文字列に変換
 	// }
 	// w.Header().Set("Content-Type", "application/json")
 	// json.NewEncoder(w).Encode(response)
@@ -213,7 +213,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	// json.NewEncoder(w).Encode(map[string]string{"message": "Login successful"})
 	// response := map[string]interface{}{
 	// 	"message": "Login successful",
-	// 	"userId":  user.ID.Hex(), // ObjectIDを文字列に変換
+	// 	"userID":  user.ID.Hex(), // ObjectIDを文字列に変換
 	// }
 	// w.Header().Set("Content-Type", "application/json")
 	// json.NewEncoder(w).Encode(response)

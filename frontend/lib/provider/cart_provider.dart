@@ -18,6 +18,8 @@ class CartProvider with ChangeNotifier {
       throw Exception('No token found');
     }
 
+    print(product);
+
     final products = {
       'productId': product['id'], // 商品IDを指定
       'quantity': 1 // 数量を指定
@@ -70,10 +72,11 @@ class CartProvider with ChangeNotifier {
         notifyListeners(); // UIを更新
         return;
       }
+
       // productDetailsが返ってきた場合の処理
       for (var product in productData) {
         _cartItems.add({
-          'id': product['productID'], // カートに登録されている商品のID
+          'productId': product['productID'], // カートに登録されている商品のID
           'quantity': product['quantity'], // カートに登録されている商品の数量
           'name': product['name'], // 商品名
           'description': product['description'], // 商品の説明
@@ -81,6 +84,7 @@ class CartProvider with ChangeNotifier {
           'stock': product['stock'], // 在庫数
         });
       }
+      print(_cartItems);
       notifyListeners(); // UIを更新
     } else {
       // エラー処理

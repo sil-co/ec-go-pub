@@ -48,10 +48,10 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetProductsByUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.URL.Query().Get("userId") // クエリパラメータからユーザーIDを取得
+	userID := r.URL.Query().Get("userID") // クエリパラメータからユーザーIDを取得
 	var products []models.Product
 
-	cursor, err := productCollection.Find(context.TODO(), bson.M{"userId": userID})
+	cursor, err := productCollection.Find(context.TODO(), bson.M{"userID": userID})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

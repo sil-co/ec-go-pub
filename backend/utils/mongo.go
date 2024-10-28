@@ -7,12 +7,8 @@ import (
 	"log"
 	"time"
 
-	// "github.com/gorilla/mux"
-	// "go.mongodb.org/mongo-driver/bson"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	// "golang.org/x/crypto/bcrypt"
 )
 
 var client *mongo.Client
