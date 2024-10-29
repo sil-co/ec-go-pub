@@ -82,10 +82,11 @@ func main() {
 	r.HandleFunc("/cart", controllers.GetCart).Methods("GET")
 	r.HandleFunc("/cart", controllers.AddToCart).Methods("POST")
 	// r.HandleFunc("/cart", controllers.UpdateCart).Methods("PUT")
-	// r.HandleFunc("/cart", controllers.DeleteCart).Methods("DELETE")
+	r.HandleFunc("/cart", controllers.DeleteCart).Methods("DELETE")
 
 	// products
-	r.HandleFunc("/products", controllers.GetProducts).Methods("GET")
+	r.HandleFunc("/products", controllers.GetProductsByUser).Methods("GET")
+	r.HandleFunc("/products/all", controllers.GetProducts).Methods("GET")
 	// product
 	// r.HandleFunc("/product", controllers.getProduct).Methods("GET")
 	r.HandleFunc("/product", controllers.AddToProduct).Methods("POST")

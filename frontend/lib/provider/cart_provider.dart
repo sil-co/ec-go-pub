@@ -18,8 +18,6 @@ class CartProvider with ChangeNotifier {
       throw Exception('No token found');
     }
 
-    print(product);
-
     final products = {
       'productId': product['id'], // 商品IDを指定
       'quantity': 1 // 数量を指定
@@ -46,12 +44,45 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  void removeFromCart(Map<String, dynamic> product) {
-    _cartItems.remove(product);
-    notifyListeners();
+  // void removeFromCart(Map<String, dynamic> product) {
+  //   _cartItems.remove(product);
+  //   notifyListeners();
+  // }
+
+  Future<void> removeFromCart(Map<String, dynamic> product) async {
+    try {
+      final token = await authService.getToken();
+      if (token == null) {
+        throw Exception('No token found');
+      }
+
+      // クエリパラメータに商品IDと数量を追加
+      final url = Uri.parse(
+          '$cartApiUrl?productId=${product['productId']}&quantity=${product['quantity']}');
+
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token,
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        await getCarts();
+        notifyListeners();
+      } else {
+        throw Exception('Failed to remove from cart');
+      }
+    } catch (e) {
+      print('Failed to remove');
+    }
   }
 
-  int get itemCount => _cartItems.length;
+  int get itemLength => _cartItems.length;
+
+  int get itemCount =>
+      _cartItems.fold<int>(0, (sum, item) => sum + (item['quantity'] as int));
 
   Future<void> getCarts() async {
     final token = await authService.getToken();
@@ -84,7 +115,6 @@ class CartProvider with ChangeNotifier {
           'stock': product['stock'], // 在庫数
         });
       }
-      print(_cartItems);
       notifyListeners(); // UIを更新
     } else {
       // エラー処理

@@ -48,23 +48,37 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetProductsByUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.URL.Query().Get("userID") // クエリパラメータからユーザーIDを取得
-	var products []models.Product
+	// AuthorizationヘッダーからJWTトークンを取得
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
 
-	cursor, err := productCollection.Find(context.TODO(), bson.M{"userID": userID})
+	// JWTトークンを検証し、userIDを取得
+	claims, err := ValidateJWT(tokenString)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+	userID := claims.UserID
+
+	var products []models.Product
+	// userIDに基づいて製品を取得するクエリを作成
+	cursor, err := productCollection.Find(context.TODO(), bson.M{"userID": userID}) // userIDでフィルタリング
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(context.TODO()) // 関数終了時にカーソルをクローズ
 
-	for cursor.Next(context.TODO()) {
+	for cursor.Next(context.TODO()) { // カーソルを使用して製品を反復処理
 		var product models.Product
 		if err := cursor.Decode(&product); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		products = append(products, product) // スライスに追加
+		products = append(products, product) // 製品をスライスに追加
 	}
 
 	if err := cursor.Err(); err != nil {
@@ -72,7 +86,7 @@ func GetProductsByUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(products) // JSON形式で製品のリストを返す
+	json.NewEncoder(w).Encode(products) // JSON形式で製品のリストをエンコードして返す
 }
 
 // /product

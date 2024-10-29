@@ -5,6 +5,7 @@ import 'package:intl/intl.dart'; // For formatting dates.
 
 import '../components/app_drower.dart';
 import '../utils/auth_service.dart';
+import 'order_history_detail_page.dart';
 
 // Order model to parse API response
 class Order {
@@ -28,7 +29,8 @@ class Order {
       products: json['products'],
       totalAmount: json['totalAmount'].toDouble(),
       status: json['status'],
-      orderedAt: DateTime.parse(json['orderedAt']['\$date']),
+      // orderedAt: DateTime.parse(json['orderedAt']['\$date']),
+      orderedAt: DateTime.parse(json['orderedAt']),
     );
   }
 }
@@ -151,7 +153,29 @@ class OrderCard extends StatelessWidget {
             const SizedBox(height: 12.0),
             ElevatedButton(
               onPressed: () {
-                // Handle view details action.
+                print('Order ID: ${order.id}');
+                print('Status: ${order.status}');
+                print('Total Amount: ${order.totalAmount}');
+                print('Ordered At: ${order.orderedAt}');
+                print('Products: ${order.products}');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OrderHistoryDetailPage(
+                      orderId: order.id.toString(),
+                      status: order.status,
+                      totalAmount: order.totalAmount,
+                      orderedAt: order.orderedAt,
+                      products: order.products.map((product) {
+                        return {
+                          'name': product['product']['name'],
+                          'quantity': product['quantity'],
+                          'price': product['product']['price']
+                        };
+                      }).toList(),
+                    ),
+                  ),
+                );
               },
               child: const Text('View Details'),
             ),
@@ -159,5 +183,9 @@ class OrderCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String getProductNameById(String productID) {
+    return "Product Name for $productID"; // 実際には商品名を返す
   }
 }

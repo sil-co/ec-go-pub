@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"ec-api/models"
@@ -174,6 +175,96 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 		bson.M{"$set": existingCart},
 	)
 
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func DeleteCart(w http.ResponseWriter, r *http.Request) {
+	// AuthorizationヘッダーからJWTトークンを取得
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := ValidateJWT(tokenString)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// クエリパラメータからproductIdとquantityを取得
+	productID := r.URL.Query().Get("productId")
+	if productID == "" {
+		http.Error(w, "Missing productId", http.StatusBadRequest)
+		return
+	}
+
+	quantityStr := r.URL.Query().Get("quantity")
+	if quantityStr == "" {
+		http.Error(w, "Missing quantity", http.StatusBadRequest)
+		return
+	}
+
+	quantity, err := strconv.Atoi(quantityStr)
+	if err != nil {
+		http.Error(w, "Invalid quantity", http.StatusBadRequest)
+		return
+	}
+
+	userID := claims.UserID
+
+	// カートを取得
+	var existingCart models.Cart
+	err = cartCollection.FindOne(context.TODO(), bson.M{"userID": userID}).Decode(&existingCart)
+	if err == mongo.ErrNoDocuments {
+		http.Error(w, "Cart not found", http.StatusNotFound)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	productObjectID, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		http.Error(w, "Invalid productId", http.StatusBadRequest)
+		return
+	}
+
+	// 商品がカートにあるかチェック
+	productIndex := -1
+	for i, existingProduct := range existingCart.Products {
+		if existingProduct.ProductID == productObjectID {
+			productIndex = i
+			break
+		}
+	}
+
+	if productIndex == -1 {
+		http.Error(w, "Product not found in cart", http.StatusNotFound)
+		return
+	}
+
+	// 数量を減らし、0になったら削除
+	if existingCart.Products[productIndex].Quantity > quantity {
+		existingCart.Products[productIndex].Quantity -= quantity
+	} else {
+		existingCart.Products = append(existingCart.Products[:productIndex], existingCart.Products[productIndex+1:]...)
+	}
+
+	// 更新日時を設定
+	existingCart.UpdatedAt = primitive.NewDateTimeFromTime(time.Now())
+
+	// カートを更新
+	_, err = cartCollection.UpdateOne(
+		context.TODO(),
+		bson.M{"userID": userID},
+		bson.M{"$set": existingCart},
+	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

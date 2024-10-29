@@ -17,8 +17,29 @@ class CartPage extends StatelessWidget {
     final cartItems = cart.cartItems;
 
     double getTotalAmount() {
-      double total = cartItems.fold(0.0, (sum, item) => sum + item['price']);
+      double total = cartItems.fold(0.0, (sum, item) {
+        double price = item['price'] ?? 0.0;
+        int quantity = item['quantity'] ?? 1;
+        return sum + (price * quantity);
+      });
       return total.ceilToDouble(); // 合計を切り上げ
+    }
+
+    Future<bool> deleteCart(Map<String, dynamic> order) async {
+      try {
+        // orderからproductsを取得
+        final products = order['products'] as List<Map<String, dynamic>>;
+
+        // 各商品をカートから削除
+        for (var product in products) {
+          await cart.removeFromCart(product);
+        }
+
+        return true; // 成功した場合はtrueを返す
+      } catch (e) {
+        print('Failed to delete cart: $e');
+        return false; // 失敗した場合はfalseを返す
+      }
     }
 
     return Scaffold(
@@ -37,7 +58,7 @@ class CartPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: ListView.builder(
-                    itemCount: cart.itemCount,
+                    itemCount: cart.itemLength,
                     itemBuilder: (context, index) {
                       final product = cartItems[index];
                       return Card(
@@ -99,26 +120,23 @@ class CartPage extends StatelessWidget {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min, // Rowのサイズを最小限に
                             children: [
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.remove, color: Colors.red),
-                                onPressed: () {
-                                  // 数量を減らす処理
-                                  // cart.decreaseQuantity(product);
-                                },
-                              ),
-                              // Text(
-                              //   '${product['quantity']}', // 現在の数量を表示
-                              //   style: const TextStyle(fontSize: 16),
+                              // Todo: 増減処理
+                              // IconButton(
+                              //   icon:
+                              //       const Icon(Icons.remove, color: Colors.red),
+                              //   onPressed: () {
+                              //     // 数量を減らす処理
+                              //     // cart.decreaseQuantity(product);
+                              //   },
                               // ),
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.add, color: Colors.green),
-                                onPressed: () {
-                                  // 数量を増やす処理
-                                  // cart.increaseQuantity(product);
-                                },
-                              ),
+                              // IconButton(
+                              //   icon:
+                              //       const Icon(Icons.add, color: Colors.green),
+                              //   onPressed: () {
+                              //     // 数量を増やす処理
+                              //     // cart.increaseQuantity(product);
+                              //   },
+                              // ),
                               IconButton(
                                 icon: const Icon(Icons.remove_circle_outline,
                                     color: Colors.red),
@@ -165,13 +183,18 @@ class CartPage extends StatelessWidget {
                       // 購入処理のロジックを追加
                       // Todo: Stripe処理を追加
                       final order = {
-                        // "products": [...cartItems],
                         "products": getProductsForOrder(cartItems),
                         "totalAmount": getTotalAmount(),
                         "status": "Pending"
                       };
-                      print(order);
-                      await submitOrder(context, order);
+                      final submitStatus = await submitOrder(order);
+                      final deleteStatus = await deleteCart(order);
+                      if (submitStatus) {
+                        _showConfirmationDialog(
+                            context, 'Thank you for your purchase!');
+                      } else {
+                        _showErrorDialog(context, 'Failed to place order.');
+                      }
                     },
                     icon: const Icon(Icons.payment),
                     label: const Text('Proceed to Checkout'),
@@ -203,8 +226,7 @@ class CartPage extends StatelessWidget {
     }).toList();
   }
 
-  Future<void> submitOrder(
-      BuildContext context, Map<String, dynamic> order) async {
+  Future<bool> submitOrder(Map<String, dynamic> order) async {
     final token = await authService.getToken();
     if (token == null) {
       throw Exception('No token found');
@@ -221,14 +243,9 @@ class CartPage extends StatelessWidget {
         headers: headers,
         body: jsonEncode(order),
       );
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        _showConfirmationDialog(context, 'Thank you for your purchase!');
-      } else {
-        _showErrorDialog(context, 'Failed to place order.');
-      }
+      return response.statusCode < 300 && response.statusCode >= 200;
     } catch (e) {
-      _showErrorDialog(context, 'Error: $e');
+      return false;
     }
   }
 

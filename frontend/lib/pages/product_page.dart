@@ -14,7 +14,7 @@ class ProductsPage extends StatelessWidget {
 
   Future<List<dynamic>> fetchProducts() async {
     final response =
-        await http.get(Uri.parse('http://localhost:8080/products'));
+        await http.get(Uri.parse('http://localhost:8080/products/all'));
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {

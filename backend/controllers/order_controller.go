@@ -4,8 +4,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -15,6 +13,29 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+type OrderWithProducts struct {
+	ID        primitive.ObjectID `json:"id"`
+	UserID    primitive.ObjectID `json:"userID"`
+	Products  []OrderProductInfo `json:"products"`
+	Total     float64            `json:"totalAmount"`
+	Status    string             `json:"status"`
+	OrderedAt primitive.DateTime `json:"orderedAt"`
+}
+
+type OrderProductInfo struct {
+	ProductID primitive.ObjectID `json:"productID"`
+	Quantity  int                `json:"quantity"`
+	Product   ProductInfo        `json:"product"` // 商品情報を追加
+}
+
+type ProductInfo struct {
+	ID          primitive.ObjectID `json:"id"`
+	Name        string             `json:"name"`
+	Description string             `json:"description"`
+	Price       float64            `json:"price"`
+	Stock       int                `json:"stock"`
+}
 
 var orderCollection *mongo.Collection // MongoDBのコレクション
 
@@ -39,7 +60,7 @@ func GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	userID := claims.UserID
 
-	var orders []models.Order
+	var orders []OrderWithProducts
 
 	// ユーザーIDに基づいて注文を取得
 	cursor, err := orderCollection.Find(context.TODO(), bson.M{"userID": userID})
@@ -55,14 +76,42 @@ func GetOrders(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		orders = append(orders, order) // 注文をスライスに追加
-	}
 
-	orderJSON, err := json.MarshalIndent(orders, "", "  ") // インデント付きでJSONに変換
-	if err != nil {
-		log.Fatalf("Failed to marshal order: %v", err)
+		// プロダクト情報を取得するためのスライス
+		var productsInfo []OrderProductInfo
+
+		for _, orderProduct := range order.Products {
+			var product models.Product // Productモデルを定義していると仮定
+			err := productCollection.FindOne(context.TODO(), bson.M{"_id": orderProduct.ProductID}).Decode(&product)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// プロダクト情報を構築
+			productsInfo = append(productsInfo, OrderProductInfo{
+				ProductID: orderProduct.ProductID,
+				Quantity:  orderProduct.Quantity,
+				Product: ProductInfo{
+					ID:          product.ID,
+					Name:        product.Name,
+					Description: product.Description,
+					Price:       product.Price,
+					Stock:       product.Stock,
+				},
+			})
+		}
+
+		// 注文データを構築
+		orders = append(orders, OrderWithProducts{
+			ID:        order.ID,
+			UserID:    order.UserID,
+			Products:  productsInfo,
+			Total:     order.Total,
+			Status:    order.Status,
+			OrderedAt: order.OrderedAt,
+		})
 	}
-	fmt.Println(string(orderJSON), userID)
 
 	if err := cursor.Err(); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -103,12 +152,6 @@ func AddToOrder(w http.ResponseWriter, r *http.Request) {
 
 	// 現在の日時を設定
 	order.OrderedAt = primitive.NewDateTimeFromTime(time.Now())
-
-	orderJSON, err := json.MarshalIndent(order, "", "  ") // インデント付きでJSONに変換
-	if err != nil {
-		log.Fatalf("Failed to marshal order: %v", err)
-	}
-	fmt.Println(string(orderJSON)) // JSON文字列を表示
 
 	// 注文をデータベースに追加
 	_, err = orderCollection.InsertOne(context.TODO(), order)

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/pages/product_edit_page.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/cart_provider.dart';
@@ -10,6 +11,7 @@ import '../pages/order_history_page.dart';
 import '../pages/user_profile_page.dart';
 import '../pages/users_page.dart';
 import '../pages/product_form_page.dart';
+import '../pages/product_edit_page.dart';
 
 // Drawerコンポーネント
 class AppDrawer extends StatelessWidget {
@@ -45,7 +47,11 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.list), // ここでアイコンを指定
             title: const Text('My Products'),
             onTap: () {
-              // Item Listedのタップ時の処理をここに追加
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const ProductEditPage()),
+              );
             },
           ),
           ListTile(
@@ -88,17 +94,18 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profile'),
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const UserProfilePage()),
-              );
-            },
-          ),
+          // Todo: Profile page
+          // ListTile(
+          //   leading: const Icon(Icons.person),
+          //   title: const Text('Profile'),
+          //   onTap: () {
+          //     Navigator.pushReplacement(
+          //       context,
+          //       MaterialPageRoute(
+          //           builder: (context) => const UserProfilePage()),
+          //     );
+          //   },
+          // ),
           const Divider(), // Divider to separate menu items
           ListTile(
             leading: const Icon(Icons.logout),
@@ -111,16 +118,17 @@ class AppDrawer extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.people),
-            title: const Text('Users'),
-            onTap: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const UsersPage()),
-              );
-            },
-          ),
+          // Todo: Users Page (For administrators)
+          // ListTile(
+          //   leading: const Icon(Icons.people),
+          //   title: const Text('Users'),
+          //   onTap: () {
+          //     Navigator.pushReplacement(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => const UsersPage()),
+          //     );
+          //   },
+          // ),
         ],
       ),
     );
