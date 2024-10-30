@@ -21,7 +21,7 @@ func InitProductController(collection *mongo.Collection) {
 }
 
 // products
-func GetProducts(w http.ResponseWriter, r *http.Request) {
+func GetProductsAll(w http.ResponseWriter, r *http.Request) {
 	var products []models.Product                                   // 製品のスライスを作成
 	cursor, err := productCollection.Find(context.TODO(), bson.D{}) // すべての製品を取得
 	if err != nil {
