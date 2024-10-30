@@ -1,16 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
 
-import '../provider/cart_provider.dart';
 import 'product_detail_page.dart';
 import '../components/app_drower.dart';
-import '../utils/snackbar_utils.dart';
+import '../utils/auth_service.dart';
 
 // 商品一覧ページ
 class ProductsPage extends StatelessWidget {
-  const ProductsPage({super.key});
+  final bool isMine;
+  ProductsPage({super.key, this.isMine = false});
+  final AuthService authService = AuthService();
 
   Future<List<dynamic>> fetchProducts() async {
     final response =
@@ -22,20 +22,53 @@ class ProductsPage extends StatelessWidget {
     }
   }
 
+  Future<List<dynamic>> fetchMyProducts() async {
+    final token = await authService.getToken();
+    if (token == null) {
+      throw Exception('No token found');
+    }
+    final response = await http.get(
+      Uri.parse('http://localhost:8080/products'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token,
+      },
+    );
+    print(response.statusCode);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final List<dynamic>? products =
+          jsonDecode(response.body) as List<dynamic>?;
+
+      if (products == null) {
+        return [];
+      }
+      return products; // ここでは非 nullable 型として扱える
+    } else {
+      throw Exception('Failed to load my products: ${response.statusCode}');
+    }
+  }
+
+  Future<List<dynamic>> getProducts() {
+    return isMine ? fetchMyProducts() : fetchProducts();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Products'),
+        title: Text(isMine ? 'My Products' : 'Products'),
       ),
       drawer: const AppDrawer(),
       body: FutureBuilder<List<dynamic>>(
-        future: fetchProducts(),
+        future: getProducts(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (snapshot.hasData && snapshot.data!.isEmpty) {
+            // 配列が空の場合の処理
+            return const Center(child: Text('No products available.'));
           } else {
             return GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -115,38 +148,62 @@ class ProductsPage extends StatelessWidget {
                         ),
                         child: const Text('View Details'),
                       ),
-                      // ElevatedButton(
-                      //   onPressed: () {
-                      //     Provider.of<CartProvider>(context, listen: false)
-                      //         .addToCart(product);
-                      //   },
-                      //   child: const Text('Add to Cart'),
-                      // ),
                       const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            await Provider.of<CartProvider>(context,
-                                    listen: false)
-                                .addToCart(product);
-                            showSuccessSnackbar(context, 'Added to Cart');
-                          } catch (e) {
-                            showErrorSnackbar(context, 'Failed to add to cart');
-                          }
-                        },
-                        icon: const Icon(Icons.add_shopping_cart, size: 20),
-                        label: const Text('Add to Cart'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange, // ボタンの背景色
-                          foregroundColor: Colors.white, // テキストとアイコンの色
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15), // 丸みを追加
+                      if (isMine) ...[
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            // Editボタンの処理
+                          },
+                          icon: const Icon(Icons.edit, size: 20),
+                          label: const Text('Edit'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.lightGreen, // ボタンの背景色
+                            foregroundColor: Colors.white, // テキストとアイコンの色
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15), // 丸みを追加
+                            ),
+                            elevation: 5, // 影を追加
                           ),
-                          elevation: 5, // 影を追加
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            // Deleteボタンの処理
+                          },
+                          icon: const Icon(Icons.delete, size: 20),
+                          label: const Text('Delete'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red, // ボタンの背景色
+                            foregroundColor: Colors.white, // テキストとアイコンの色
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15), // 丸みを追加
+                            ),
+                            elevation: 5, // 影を追加
+                          ),
+                        ),
+                      ] else ...[
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            // Add to Cartボタンの処理
+                          },
+                          icon: const Icon(Icons.add_shopping_cart, size: 20),
+                          label: const Text('Add to Cart'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange, // ボタンの背景色
+                            foregroundColor: Colors.white, // テキストとアイコンの色
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15), // 丸みを追加
+                            ),
+                            elevation: 5, // 影を追加
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 );

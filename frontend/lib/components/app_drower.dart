@@ -21,6 +21,24 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final AuthService authService = AuthService();
     final cartProvider = Provider.of<CartProvider>(context);
+    final List<Map<String, dynamic>> products = [
+      {
+        'id': '6719cbea355e6ae72afe6916',
+        'name': 'Smartphone',
+        'description': 'Latest model with high specs',
+        'price': 699.99,
+        'stock': 50,
+        'category': 'Electronics',
+      },
+      {
+        'id': '1234567890abcdef',
+        'name': 'Laptop',
+        'description': 'Lightweight and powerful',
+        'price': 1299.99,
+        'stock': 30,
+        'category': 'Computers',
+      },
+    ];
 
     return Drawer(
       child: ListView(
@@ -39,7 +57,7 @@ class AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => const ProductsPage()),
+                MaterialPageRoute(builder: (context) => ProductsPage()),
               );
             },
           ),
@@ -50,7 +68,7 @@ class AppDrawer extends StatelessWidget {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const ProductEditPage()),
+                    builder: (context) => ProductsPage(isMine: true)),
               );
             },
           ),
