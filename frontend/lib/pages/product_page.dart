@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
+import '../provider/cart_provider.dart';
 import 'product_detail_page.dart';
 import '../components/app_drower.dart';
+import '../utils/snackbar_utils.dart';
 import '../utils/auth_service.dart';
 
 // 商品一覧ページ
@@ -11,6 +14,16 @@ class ProductsPage extends StatelessWidget {
   final bool isMine;
   ProductsPage({super.key, this.isMine = false});
   final AuthService authService = AuthService();
+  // 共通のボタンスタイル
+  final ButtonStyle buttonStyle = ElevatedButton.styleFrom(
+    backgroundColor: Colors.blueAccent, // ボタンの色（デフォルト）
+    foregroundColor: Colors.white, // ボタンのテキスト色
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(15), // ボタンの角を丸く
+    ),
+    minimumSize: const Size(150, 40), // ボタンの最小サイズ
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // パディング
+  );
 
   Future<List<dynamic>> fetchProducts() async {
     final response =
@@ -52,6 +65,20 @@ class ProductsPage extends StatelessWidget {
     return isMine ? fetchMyProducts() : fetchProducts();
   }
 
+  int _getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    if (width >= 1200) {
+      return 5; // PC
+    } else if (width >= 960) {
+      return 4; // PC
+    } else if (width >= 600) {
+      return 3; // タブレット
+    } else {
+      return 2; // モバイル
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,11 +98,13 @@ class ProductsPage extends StatelessWidget {
             return const Center(child: Text('No products available.'));
           } else {
             return GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, // 列
-                childAspectRatio: 1, // 高さと幅の比率を調整
-                crossAxisSpacing: 12.0, // 列間のスペース
-                mainAxisSpacing: 12.0, // 行間のスペース
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: _getCrossAxisCount(context), // 列
+                // childAspectRatio: 0.75, // 高さと幅の比率を調整
+                childAspectRatio:
+                    (itemHeight / (width / crossAxisCount)), // アイテムの縦横比を設定
+                crossAxisSpacing: 10.0, // 列間のスペース
+                mainAxisSpacing: 10.0, // 行間のスペース
               ),
               itemCount: snapshot.data!.length,
               itemBuilder: (context, index) {
@@ -90,19 +119,29 @@ class ProductsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // ClipRRect(
+                      //   borderRadius: BorderRadius.only(
+                      //     topLeft: Radius.circular(15),
+                      //     topRight: Radius.circular(15),
+                      //   ),
+                      //   child: SizedBox(
+                      //     height: 120, // 高さを固定（150から120に変更）
+                      //     child: Center(
+                      //       child: Image.asset(
+                      //         imageUrl,
+                      //         fit: BoxFit.cover,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                       ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(15),
-                          topRight: Radius.circular(15),
-                        ),
-                        child: SizedBox(
-                          height: 120, // 高さを固定（150から120に変更）
-                          child: Center(
-                            child: Image.asset(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(10)),
+                        child: Image.asset(
+                          imageUrl,
+                          height: 120, // Adjusted image height
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
                       ),
                       Padding(
@@ -139,12 +178,9 @@ class ProductsPage extends StatelessWidget {
                             ),
                           );
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent, // ボタンの色
-                          foregroundColor: Colors.white, // ボタンのテキスト色
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15), // ボタンの角を丸く
-                          ),
+                        style: buttonStyle.copyWith(
+                          backgroundColor: WidgetStateProperty.all(
+                              Colors.blueAccent), // ボタンの色
                         ),
                         child: const Text('View Details'),
                       ),
@@ -156,15 +192,9 @@ class ProductsPage extends StatelessWidget {
                           },
                           icon: const Icon(Icons.edit, size: 20),
                           label: const Text('Edit'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.lightGreen, // ボタンの背景色
-                            foregroundColor: Colors.white, // テキストとアイコンの色
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15), // 丸みを追加
-                            ),
-                            elevation: 5, // 影を追加
+                          style: buttonStyle.copyWith(
+                            backgroundColor: WidgetStateProperty.all(
+                                Colors.lightGreen), // Editボタンの色
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -174,33 +204,40 @@ class ProductsPage extends StatelessWidget {
                           },
                           icon: const Icon(Icons.delete, size: 20),
                           label: const Text('Delete'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red, // ボタンの背景色
-                            foregroundColor: Colors.white, // テキストとアイコンの色
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15), // 丸みを追加
-                            ),
-                            elevation: 5, // 影を追加
+                          style: buttonStyle.copyWith(
+                            backgroundColor: WidgetStateProperty.all(
+                                Colors.red), // Deleteボタンの色
                           ),
                         ),
                       ] else ...[
                         ElevatedButton.icon(
                           onPressed: () async {
                             // Add to Cartボタンの処理
+                            try {
+                              await Provider.of<CartProvider>(context,
+                                      listen: false)
+                                  .addToCart(product);
+                              showSuccessSnackbar(context, 'Added to Cart');
+                            } catch (e) {
+                              showErrorSnackbar(
+                                  context, 'Failed to add to cart');
+                            }
                           },
                           icon: const Icon(Icons.add_shopping_cart, size: 20),
                           label: const Text('Add to Cart'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange, // ボタンの背景色
-                            foregroundColor: Colors.white, // テキストとアイコンの色
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15), // 丸みを追加
-                            ),
-                            elevation: 5, // 影を追加
+                          // style: ElevatedButton.styleFrom(
+                          //   backgroundColor: Colors.orange, // ボタンの背景色
+                          //   foregroundColor: Colors.white, // テキストとアイコンの色
+                          //   padding: const EdgeInsets.symmetric(
+                          //       horizontal: 16, vertical: 8),
+                          //   shape: RoundedRectangleBorder(
+                          //     borderRadius: BorderRadius.circular(15), // 丸みを追加
+                          //   ),
+                          //   elevation: 5, // 影を追加
+                          // ),
+                          style: buttonStyle.copyWith(
+                            backgroundColor: WidgetStateProperty.all(
+                                Colors.orange), // Deleteボタンの色
                           ),
                         ),
                       ],

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../provider/cart_provider.dart';
+import '../utils/snackbar_utils.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final Map<String, dynamic> product;
@@ -62,8 +66,15 @@ class ProductDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     // Handle the add to cart action
+                    try {
+                      await Provider.of<CartProvider>(context, listen: false)
+                          .addToCart(product);
+                      showSuccessSnackbar(context, 'Added to Cart');
+                    } catch (e) {
+                      showErrorSnackbar(context, 'Failed to add to cart');
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.blueAccent,
