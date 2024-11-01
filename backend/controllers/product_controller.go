@@ -5,13 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"time"
 
-	// "github.com/gorilla/mux"
 	"ec-api/models"
 
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var productCollection *mongo.Collection // MongoDBのコレクション
@@ -22,8 +24,11 @@ func InitProductController(collection *mongo.Collection) {
 
 // products
 func GetProductsAll(w http.ResponseWriter, r *http.Request) {
-	var products []models.Product                                   // 製品のスライスを作成
-	cursor, err := productCollection.Find(context.TODO(), bson.D{}) // すべての製品を取得
+	var products []models.Product
+	options := options.Find().SetSort(bson.D{
+		{Key: "createdat", Value: -1},
+	})
+	cursor, err := productCollection.Find(context.TODO(), bson.D{}, options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -64,8 +69,11 @@ func GetProductsByUser(w http.ResponseWriter, r *http.Request) {
 	userID := claims.UserID
 
 	var products []models.Product
+	options := options.Find().SetSort(bson.D{
+		{Key: "createdat", Value: -1},
+	})
 	// userIDに基づいて製品を取得するクエリを作成
-	cursor, err := productCollection.Find(context.TODO(), bson.M{"userID": userID}) // userIDでフィルタリング
+	cursor, err := productCollection.Find(context.TODO(), bson.M{"userID": userID}, options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -134,10 +142,115 @@ func AddToProduct(w http.ResponseWriter, r *http.Request) {
 	// 受け取ったuserIDをProductに追加
 	product.UserID = userID
 
+	// 現在の日時をCreatedAtに設定
+	product.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+
 	_, err = productCollection.InsertOne(context.TODO(), product)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	// JWTトークンの検証
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := ValidateJWT(tokenString)
+	userID := claims.UserID
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// URLパラメータからProductIdを取得
+	params := mux.Vars(r)
+	productID, err := primitive.ObjectIDFromHex(params["ProductId"])
+	if err != nil {
+		http.Error(w, "Invalid product ID", http.StatusBadRequest)
+		return
+	}
+
+	// リクエストボディから更新するプロダクト情報を取得
+	var product models.Product
+	err = json.NewDecoder(r.Body).Decode(&product)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// UserIDを除外した更新内容を作成
+	updateFields := bson.M{}
+	if product.Name != "" {
+		updateFields["name"] = product.Name
+	}
+	if product.Description != "" {
+		updateFields["description"] = product.Description
+	}
+	if product.Price != 0 { // Assuming Price is a float or int
+		updateFields["price"] = product.Price
+	}
+	if product.Stock != 0 {
+		updateFields["stock"] = product.Stock
+	}
+	if product.Category != "" {
+		updateFields["category"] = product.Category
+	}
+
+	if len(updateFields) == 0 {
+		http.Error(w, "No fields to update", http.StatusBadRequest)
+		return
+	}
+
+	// 該当のプロダクトを更新
+	filter := bson.M{"_id": productID, "userID": userID}
+	// update := bson.M{"$set": product}
+	// result, err := productCollection.UpdateOne(context.TODO(), filter, update)
+	update := bson.M{"$set": updateFields}
+	result, err := productCollection.UpdateOne(context.TODO(), filter, update)
+	if err != nil || result.MatchedCount == 0 {
+		http.Error(w, "Product not found or unauthorized", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	// JWTトークンの検証
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := ValidateJWT(tokenString)
+	userID := claims.UserID
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	// URLパラメータからProductIdを取得
+	params := mux.Vars(r)
+	productID, err := primitive.ObjectIDFromHex(params["ProductId"])
+	if err != nil {
+		http.Error(w, "Invalid product ID", http.StatusBadRequest)
+		return
+	}
+
+	// 該当のプロダクトを削除
+	filter := bson.M{"_id": productID, "userID": userID}
+	result, err := productCollection.DeleteOne(context.TODO(), filter)
+	if err != nil || result.DeletedCount == 0 {
+		http.Error(w, "Product not found or unauthorized", http.StatusNotFound)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

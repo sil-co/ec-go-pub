@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:fluttertoast/fluttertoast.dart';
 
 import '../components/app_drower.dart';
 import '../utils/auth_service.dart';
 import '../utils/snackbar_utils.dart';
 
 class ProductFormPage extends StatefulWidget {
-  const ProductFormPage({super.key});
+  final Map<String, dynamic>? product;
+
+  const ProductFormPage({Key? key, this.product}) : super(key: key);
 
   @override
   _ProductFormPageState createState() => _ProductFormPageState();
@@ -26,6 +27,18 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   final AuthService authService = AuthService();
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.product != null) {
+      _nameController.text = widget.product!['name'] ?? '';
+      _descriptionController.text = widget.product!['description'] ?? '';
+      _priceController.text = widget.product!['price']?.toString() ?? '';
+      _stockController.text = widget.product!['stock']?.toString() ?? '';
+      _categoryController.text = widget.product!['category'] ?? '';
+    }
+  }
+
   Future<void> _submitProduct() async {
     try {
       if (_formKey.currentState!.validate()) {
@@ -34,7 +47,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
           throw Exception('No token found');
         }
 
-        final url = Uri.parse('http://localhost:8080/product');
+        final url = widget.product == null
+            ? Uri.parse('http://localhost:8080/product')
+            : Uri.parse(
+                'http://localhost:8080/product/${widget.product!['id']}');
+
         final product = {
           "name": _nameController.text,
           "description": _descriptionController.text,
@@ -43,25 +60,43 @@ class _ProductFormPageState extends State<ProductFormPage> {
           "category": _categoryController.text,
         };
 
-        final response = await http.post(
-          url,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token,
-          },
-          body: jsonEncode(product),
-        );
-
-        if (response.statusCode == 201) {
-          showSuccessSnackbar(context, "Product created successfully!");
-          _clearForm();
+        final response = widget.product == null
+            ? await http.post(
+                url,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': token,
+                },
+                body: jsonEncode(product),
+              )
+            : await http.put(
+                url,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': token,
+                },
+                body: jsonEncode(product),
+              );
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          showSuccessSnackbar(
+              context,
+              widget.product == null
+                  ? "Product created successfully!"
+                  : "Product updated successfully!");
+          if (widget.product != null) {
+            // Navigator.pop(context, product);
+          } else {
+            _clearForm();
+          }
         } else {
-          Fluttertoast.showToast(msg: "Failed to create product.");
+          showErrorSnackbar(context,
+              "Failed to ${widget.product == null ? 'create' : 'update'} product.");
         }
       }
     } catch (e) {
       print(e);
-      showErrorSnackbar(context, 'Failed to create.');
+      showErrorSnackbar(context,
+          'Failed to ${widget.product == null ? 'create' : 'update'} product.');
     }
   }
 
@@ -77,15 +112,19 @@ class _ProductFormPageState extends State<ProductFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Listing'),
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back), // 戻るアイコン
-        //   onPressed: () {
-        //     Navigator.pop(context); // 前のページに戻る
-        //   },
-        // ),
+        title: Text(widget.product == null ? 'Create Product' : 'Edit Product'),
+        leading: widget.product != null
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () {
+                  Navigator.pop(context, widget.product);
+                },
+              )
+            : null, // 新規作成の場合は表示しない
       ),
-      drawer: const AppDrawer(),
+      drawer: widget.product == null
+          ? const AppDrawer()
+          : null, // update時はdrawerを非表示
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -130,7 +169,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitProduct,
-                child: const Text('Submit'),
+                child: Text(widget.product == null ? 'Submit' : 'Update'),
               ),
             ],
           ),

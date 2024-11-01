@@ -75,7 +75,7 @@ class CartProvider with ChangeNotifier {
         throw Exception('Failed to remove from cart');
       }
     } catch (e) {
-      print('Failed to remove');
+      throw Exception('Failed to remove from cart');
     }
   }
 

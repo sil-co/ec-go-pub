@@ -153,11 +153,6 @@ class OrderCard extends StatelessWidget {
             const SizedBox(height: 12.0),
             ElevatedButton(
               onPressed: () {
-                print('Order ID: ${order.id}');
-                print('Status: ${order.status}');
-                print('Total Amount: ${order.totalAmount}');
-                print('Ordered At: ${order.orderedAt}');
-                print('Products: ${order.products}');
                 Navigator.push(
                   context,
                   MaterialPageRoute(

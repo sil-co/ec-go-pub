@@ -50,7 +50,7 @@ class IntroPage extends StatelessWidget {
                     Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => ProductsPage()));
+                            builder: (context) => ProductsPage(isMine: false)));
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white, // ボタンの背景色

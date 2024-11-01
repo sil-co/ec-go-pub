@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/pages/product_edit_page.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/cart_provider.dart';
@@ -8,10 +7,7 @@ import '../pages/login_page.dart';
 import '../pages/product_page.dart';
 import '../pages/cart_page.dart';
 import '../pages/order_history_page.dart';
-import '../pages/user_profile_page.dart';
-import '../pages/users_page.dart';
 import '../pages/product_form_page.dart';
-import '../pages/product_edit_page.dart';
 
 // Drawerコンポーネント
 class AppDrawer extends StatelessWidget {
@@ -21,24 +17,6 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     final AuthService authService = AuthService();
     final cartProvider = Provider.of<CartProvider>(context);
-    final List<Map<String, dynamic>> products = [
-      {
-        'id': '6719cbea355e6ae72afe6916',
-        'name': 'Smartphone',
-        'description': 'Latest model with high specs',
-        'price': 699.99,
-        'stock': 50,
-        'category': 'Electronics',
-      },
-      {
-        'id': '1234567890abcdef',
-        'name': 'Laptop',
-        'description': 'Lightweight and powerful',
-        'price': 1299.99,
-        'stock': 30,
-        'category': 'Computers',
-      },
-    ];
 
     return Drawer(
       child: ListView(
@@ -57,7 +35,8 @@ class AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => ProductsPage()),
+                MaterialPageRoute(
+                    builder: (context) => ProductsPage(isMine: false)),
               );
             },
           ),

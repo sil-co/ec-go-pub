@@ -61,7 +61,9 @@ func GetCarts(w http.ResponseWriter, r *http.Request) {
 		productDetails = []CartProductDetail{}
 
 	} else {
-		for _, cartProduct := range cart.Products {
+		// for _, cartProduct := range cart.Products {
+		for i := len(cart.Products) - 1; i >= 0; i-- {
+			cartProduct := cart.Products[i]
 			var product models.Product
 			err := productCollection.FindOne(context.TODO(), bson.M{"_id": cartProduct.ProductID}).Decode(&product)
 			if err != nil {

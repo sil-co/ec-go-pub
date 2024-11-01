@@ -90,8 +90,8 @@ func main() {
 	// product
 	// r.HandleFunc("/product", controllers.getProduct).Methods("GET")
 	r.HandleFunc("/product", controllers.AddToProduct).Methods("POST")
-	// r.HandleFunc("/product", controllers.updateProduct).Methods("PUT")
-	// r.HandleFunc("/product", controllers.deleteProduct).Methods("DELETE")
+	r.HandleFunc("/product/{ProductId}", controllers.UpdateProduct).Methods("PUT")
+	r.HandleFunc("/product/{ProductId}", controllers.DeleteProduct).Methods("DELETE")
 
 	// categories
 	r.HandleFunc("/categories", controllers.GetCategories).Methods("GET")

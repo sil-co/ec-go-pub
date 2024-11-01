@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type OrderWithProducts struct {
@@ -62,8 +63,11 @@ func GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	var orders []OrderWithProducts
 
+	options := options.Find().SetSort(bson.D{
+		{Key: "orderedat", Value: -1},
+	})
 	// ユーザーIDに基づいて注文を取得
-	cursor, err := orderCollection.Find(context.TODO(), bson.M{"userID": userID})
+	cursor, err := orderCollection.Find(context.TODO(), bson.M{"userID": userID}, options)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

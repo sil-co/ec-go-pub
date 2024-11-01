@@ -37,7 +37,6 @@ class CartPage extends StatelessWidget {
 
         return true; // 成功した場合はtrueを返す
       } catch (e) {
-        print('Failed to delete cart: $e');
         return false; // 失敗した場合はfalseを返す
       }
     }
@@ -188,7 +187,6 @@ class CartPage extends StatelessWidget {
                         "status": "Pending"
                       };
                       final submitStatus = await submitOrder(order);
-                      final deleteStatus = await deleteCart(order);
                       if (submitStatus) {
                         _showConfirmationDialog(
                             context, 'Thank you for your purchase!');
