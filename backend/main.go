@@ -14,6 +14,7 @@ import (
 
 var userCollection *mongo.Collection
 var productCollection *mongo.Collection
+var imageCollection *mongo.Collection
 var cartCollection *mongo.Collection
 var categoryCollection *mongo.Collection
 var orderCollection *mongo.Collection
@@ -45,6 +46,7 @@ func main() {
 	// MongoDBのコレクションを設定
 	userCollection = utils.GetMongoClient().Database("ec-db").Collection("users")
 	productCollection = utils.GetMongoClient().Database("ec-db").Collection("products")
+	imageCollection = utils.GetMongoClient().Database("ec-db").Collection("images")
 	cartCollection = utils.GetMongoClient().Database("ec-db").Collection("carts")
 	categoryCollection = utils.GetMongoClient().Database("ec-db").Collection("categories")
 	orderCollection = utils.GetMongoClient().Database("ec-db").Collection("orders")
@@ -54,6 +56,7 @@ func main() {
 	// コントローラーの初期化
 	controllers.InitUserController(userCollection)
 	controllers.InitProductController(productCollection)
+	controllers.InitImageController(imageCollection)
 	controllers.InitCartController(cartCollection)
 	controllers.InitCategoryController(categoryCollection)
 	controllers.InitOrderController(orderCollection)
@@ -92,6 +95,12 @@ func main() {
 	r.HandleFunc("/product", controllers.AddToProduct).Methods("POST")
 	r.HandleFunc("/product/{ProductId}", controllers.UpdateProduct).Methods("PUT")
 	r.HandleFunc("/product/{ProductId}", controllers.DeleteProduct).Methods("DELETE")
+
+	// image
+	// r.HandleFunc("/image", controllers.GetImage).Methods("GET")
+	r.HandleFunc("/image", controllers.UploadImage).Methods("POST")
+	// r.HandleFunc("/image/{ImageId}", controllers.UpdateImage).Methods("PUT")
+	// r.HandleFunc("/image/{ImageId}", controllers.DeleteImage).Methods("DELETE")
 
 	// categories
 	r.HandleFunc("/categories", controllers.GetCategories).Methods("GET")

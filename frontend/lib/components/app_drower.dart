@@ -25,7 +25,7 @@ class AppDrawer extends StatelessWidget {
           const DrawerHeader(
             decoration: BoxDecoration(color: Colors.blue),
             child: Text(
-              'EC App Menu',
+              'EC Go Menu',
               style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),

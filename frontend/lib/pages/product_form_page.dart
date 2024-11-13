@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../components/app_drower.dart';
 import '../utils/auth_service.dart';
 import '../utils/snackbar_utils.dart';
+import '../components/image_upload_screen.dart';
 
 class ProductFormPage extends StatefulWidget {
   final Map<String, dynamic>? product;
@@ -131,6 +132,15 @@ class _ProductFormPageState extends State<ProductFormPage> {
           key: _formKey,
           child: ListView(
             children: [
+              // 画像アップロード画面をここに表示
+              Text("Upload Product Image", style: TextStyle(fontSize: 18)),
+              // SizedBox(height: 10),
+
+              Container(
+                height: 200, // 固定の高さを設定
+                child: ImageUploadScreen(),
+              ),
+
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Product Name'),
