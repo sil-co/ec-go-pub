@@ -1,4 +1,13 @@
 
+## 実行手順
+※フロントエンド。バックエンドは「ECGo/backend」フォルダのreadmeを参照
+- VSCodeを開いてない場合、ECGoフォルダをルートプロジェクトとして、VSCodeで開く
+- `ctrl + j`でターミナルを開く
+- `cd ./frontend`で `frontend`ディレクトリに移動
+- `flutter pub get`で依存関係の解決
+- `flutter run`でflutterの実行
+- `Please choose one (or "q" to quit): 2`の選択で2を選ぶ
+
 ## Todo
 - [済] ログイン処理
 - [済] 商品一覧ページ

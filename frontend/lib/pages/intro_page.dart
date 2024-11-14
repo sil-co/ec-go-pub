@@ -25,7 +25,7 @@ class IntroPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Welcome to EC App!',
+                  'Welcome to EC Go!',
                   style: TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.bold,
