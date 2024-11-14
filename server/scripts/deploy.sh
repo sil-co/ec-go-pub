@@ -37,6 +37,9 @@ echo "Cloning or updating the GitHub repository..."
 if [ -d "/var/www/html/ec-app" ]; then
     echo "Project directory already exists. Pulling latest changes..."
     cd /var/www/html/ec-app
+    git config --global core.autocrlf true
+    git config core.fileMode false
+    git config --global --add safe.directory /var/www/html/ec-app
     GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git pull
     cd /var/www/html/ec-app/backend
 else
