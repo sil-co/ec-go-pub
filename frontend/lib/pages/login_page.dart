@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../utils/snackbar_utils.dart';
 import '../utils/auth_service.dart';
+import '../utils/config.dart';
 import 'home_page.dart';
 import 'signup_page.dart';
 
@@ -20,7 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   final AuthService authService = AuthService();
 
   Future<void> _login() async {
-    final url = Uri.parse('http://localhost:8080/login');
+    final url = Uri.parse('${Config.apiUrl}/login');
     try {
       final response = await http.post(
         url,

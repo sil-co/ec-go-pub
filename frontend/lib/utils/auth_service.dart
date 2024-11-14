@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
+import '../utils/config.dart';
+
 class AuthService {
   // ユーザーの認証状態を取得
   // Future<bool> isLoggedIn() async {
@@ -25,7 +27,7 @@ class AuthService {
 
   Future<bool> checkAuth(String token) async {
     try {
-      final url = Uri.parse('http://localhost:8080/auth');
+      final url = Uri.parse('${Config.apiUrl}/auth');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

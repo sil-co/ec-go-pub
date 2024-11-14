@@ -3,11 +3,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../utils/auth_service.dart';
+import '../utils/config.dart';
 
 class CartProvider with ChangeNotifier {
   final List<Map<String, dynamic>> _cartItems = [];
-  final String cartsApiUrl = 'http://localhost:8080/carts';
-  final String cartApiUrl = 'http://localhost:8080/cart';
+  final String cartsApiUrl = '${Config.apiUrl}/carts';
+  final String cartApiUrl = '${Config.apiUrl}/cart';
   final AuthService authService = AuthService();
 
   List<Map<String, dynamic>> get cartItems => _cartItems;

@@ -9,6 +9,7 @@ import 'product_form_page.dart';
 import '../components/app_drower.dart';
 import '../utils/snackbar_utils.dart';
 import '../utils/auth_service.dart';
+import '../utils/config.dart';
 
 // 商品一覧ページ
 class ProductsPage extends StatefulWidget {
@@ -44,8 +45,7 @@ class _ProductsPageState extends State<ProductsPage> {
   );
 
   Future<List<dynamic>> fetchProducts() async {
-    final response =
-        await http.get(Uri.parse('http://localhost:8080/products/all'));
+    final response = await http.get(Uri.parse('${Config.apiUrl}/products/all'));
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -59,7 +59,7 @@ class _ProductsPageState extends State<ProductsPage> {
       throw Exception('No token found');
     }
     final response = await http.get(
-      Uri.parse('http://localhost:8080/products'),
+      Uri.parse('${Config.apiUrl}/products'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': token,
@@ -115,7 +115,7 @@ class _ProductsPageState extends State<ProductsPage> {
         throw Exception('No token found');
       }
 
-      final url = Uri.parse('http://localhost:8080/product/${product!['id']}');
+      final url = Uri.parse('${Config.apiUrl}/product/${product!['id']}');
 
       final response = await http.delete(
         url,

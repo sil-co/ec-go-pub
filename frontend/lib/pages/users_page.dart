@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../components/app_drower.dart';
+import '../utils/config.dart';
 
 // ユーザー一覧ページ
 class UsersPage extends StatelessWidget {
   const UsersPage({super.key});
 
   Future<List<dynamic>> fetchUsers() async {
-    final response = await http.get(Uri.parse('http://localhost:8080/users'));
+    final response = await http.get(Uri.parse('${Config.apiUrl}/users'));
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {

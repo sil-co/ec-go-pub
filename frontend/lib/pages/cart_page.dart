@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../provider/cart_provider.dart';
 import '../components/app_drower.dart';
 import '../utils/auth_service.dart';
+import '../utils/config.dart';
 
 class CartPage extends StatelessWidget {
   CartPage({super.key});
@@ -229,7 +230,7 @@ class CartPage extends StatelessWidget {
     if (token == null) {
       throw Exception('No token found');
     }
-    const url = 'http://localhost:8080/order'; // API endpoint
+    const url = '${Config.apiUrl}/order';
     final headers = {
       'Content-Type': 'application/json',
       'Authorization': token, // Attach JWT token in the header.

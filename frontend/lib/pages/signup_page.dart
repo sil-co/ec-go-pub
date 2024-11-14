@@ -6,6 +6,7 @@ import '../utils/snackbar_utils.dart';
 import '../utils/auth_service.dart';
 import 'home_page.dart';
 import 'login_page.dart';
+import '../utils/config.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -21,7 +22,7 @@ class _SignupPageState extends State<SignupPage> {
   final AuthService authService = AuthService();
 
   Future<void> _signup() async {
-    final url = Uri.parse('http://localhost:8080/user'); // 新規登録用のエンドポイント
+    final url = Uri.parse('${Config.apiUrl}/user'); // 新規登録用のエンドポイント
     try {
       final response = await http.post(
         url,

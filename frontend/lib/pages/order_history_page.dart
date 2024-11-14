@@ -5,6 +5,7 @@ import 'package:intl/intl.dart'; // For formatting dates.
 
 import '../components/app_drower.dart';
 import '../utils/auth_service.dart';
+import '../utils/config.dart';
 import 'order_history_detail_page.dart';
 
 // Order model to parse API response
@@ -59,7 +60,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       throw Exception('No token found');
     }
 
-    final url = 'http://localhost:8080/orders';
+    final url = '${Config.apiUrl}/orders';
 
     try {
       // final response = await http.get(url);

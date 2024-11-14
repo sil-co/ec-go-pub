@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../components/app_drower.dart';
 import '../utils/auth_service.dart';
 import '../utils/snackbar_utils.dart';
+import '../utils/config.dart';
 
 class ProductFormPage extends StatefulWidget {
   final Map<String, dynamic>? product;
@@ -48,9 +49,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
         }
 
         final url = widget.product == null
-            ? Uri.parse('http://localhost:8080/product')
+            ? Uri.parse('${Config.apiUrl}/product')
             : Uri.parse(
-                'http://localhost:8080/product/${widget.product!['id']}');
+                '${Config.apiUrl}/product/${widget.product!['id']}');
 
         final product = {
           "name": _nameController.text,
