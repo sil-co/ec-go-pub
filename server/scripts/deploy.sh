@@ -33,16 +33,15 @@ if [ -d "/var/www/html/ec-app" ]; then
     echo "Project directory already exists. Pulling latest changes..."
     cd /var/www/html/ec-app
     GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git pull
+    cd /var/www/html/ec-app/backend
 else
     GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git clone git@github.com:shelner/ec-app.git /var/www/html
-    cd /var/www/html/ec-app
+    cd /var/www/html/ec-app/backend
 fi
 
 # Docker Composeを使ってアプリケーションを起動
 echo "Starting Docker Compose..."
 docker-compose up -d
-
-echo "Deployment completed."
 
 # Goアプリケーションのビルドと実行
 echo "Building Go application..."
@@ -55,13 +54,13 @@ nohup ./app &
 # Flutterウェブアプリのビルド
 echo "Building Flutter web application..."
 cd /var/www/html/ec-app/frontend
-flutter config --enable-web
+# flutter config --enable-web
 flutter build web
 
 # ビルド済みFlutterファイルをNginxのルートディレクトリにコピー
 echo "Deploying Flutter web application to Nginx..."
-sudo rm -rf /var/www/html/*
-sudo cp -r build/web/* /var/www/html/
+# sudo rm -rf /var/www/html/*
+# sudo cp -r build/web/* /var/www/html/
 
 # Nginx設定ファイルを作成
 echo "Configuring Nginx..."
@@ -70,7 +69,7 @@ server {
     listen 80;
     server_name your_domain_or_ip;
 
-    root /var/www/html;
+    root /var/www/html/ec-app/frontend/build/web;
     index index.html index.htm;
 
     location / {
@@ -78,6 +77,10 @@ server {
     }
 }
 EOL
+
+# Nginxの権限を修正
+sudo chown -R www-data:www-data /var/www/html/
+sudo chmod -R 755 /var/www/html/
 
 # Nginx設定を有効にしてリロード
 sudo ln -sf /etc/nginx/sites-available/flutter_site /etc/nginx/sites-enabled/
