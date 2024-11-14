@@ -1,6 +1,8 @@
 ## bashスクリプトで構築
 - ssh login: `ssh your_user@your_server_ip`
-- shファイル作成: `vim ~/deploy.sh`
+- `ec-app/server/scripts/deploy.sh`の`server_name`の値を該当のIPアドレスに変更する
+- `ec-app/frontend/lib/utils/config.dart`を本番環境用に変更しプッシュ
+- スクリプトファイル作成: `vim ~/deploy.sh`
     - 中身は`scripts/deploy.sh`をコピーし貼り付け
     - 権限追加: `chmod +x deploy.sh`
 - 実行前 ssh設定が必要

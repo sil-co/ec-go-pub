@@ -3,14 +3,16 @@
 # 更新と必要なパッケージのインストール
 echo "Updating system and installing required packages..."
 sudo apt update
-sudo apt install -y docker.io docker-compose git nginx
+sudo apt install -y docker.io docker-compose git nginx unzip
 
 # Flutterのインストール
 if ! command -v flutter &> /dev/null
 then
     echo "Installing Flutter..."
     git clone https://github.com/flutter/flutter.git -b stable ~/flutter
-    export PATH="$PATH:$HOME/flutter/bin"
+    echo 'export PATH="$PATH:$HOME/flutter/bin"' >> ~/.bashrc
+    source ~/.bashrc
+    flutter --version
 else
     echo "Flutter is already installed."
 fi
@@ -22,7 +24,10 @@ then
     wget https://go.dev/dl/go1.23.3.linux-amd64.tar.gz
     sudo tar -C /usr/local -xzf go1.23.3.linux-amd64.tar.gz
     export PATH="$PATH:/usr/local/go/bin"
+    echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc
+    source ~/.bashrc
     rm go1.23.3.linux-amd64.tar.gz
+
 else
     echo "Go is already installed."
 fi
@@ -35,7 +40,7 @@ if [ -d "/var/www/html/ec-app" ]; then
     GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git pull
     cd /var/www/html/ec-app/backend
 else
-    GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git clone git@github.com:shelner/ec-app.git /var/www/html
+    GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git clone git@github.com:shelner/ec-app.git /var/www/html/ec-app
     cd /var/www/html/ec-app/backend
 fi
 
@@ -46,28 +51,29 @@ docker-compose up -d
 # Goアプリケーションのビルドと実行
 echo "Building Go application..."
 cd /var/www/html/ec-app/backend
+go get
+go mod tidy
 go build -o app main.go
 
 echo "Starting Go application..."
 nohup ./app &
+echo "Go is running..."
 
 # Flutterウェブアプリのビルド
 echo "Building Flutter web application..."
 cd /var/www/html/ec-app/frontend
-# flutter config --enable-web
+flutter pub get
 flutter build web
 
 # ビルド済みFlutterファイルをNginxのルートディレクトリにコピー
 echo "Deploying Flutter web application to Nginx..."
-# sudo rm -rf /var/www/html/*
-# sudo cp -r build/web/* /var/www/html/
 
 # Nginx設定ファイルを作成
 echo "Configuring Nginx..."
 sudo tee /etc/nginx/sites-available/flutter_site <<EOL
 server {
     listen 80;
-    server_name your_domain_or_ip;
+    server_name 133.18.232.127;
 
     root /var/www/html/ec-app/frontend/build/web;
     index index.html index.htm;
