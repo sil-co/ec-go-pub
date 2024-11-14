@@ -81,10 +81,23 @@ server {
     root /var/www/html/ec-app/frontend/build/web;
     index index.html index.htm;
 
+    # フロントエンドへのリクエスト
     location / {
         try_files \$uri \$uri/ /index.html;
     }
+
+    # Goサーバー（例: http://localhost:8080）へのリバースプロキシ
+    # /apiは削除する
+    location /api/ {
+        rewrite ^/api/(.*) /$1 break;
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 }
+
 EOL
 
 # Nginxの権限を修正
