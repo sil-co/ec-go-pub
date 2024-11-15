@@ -18,6 +18,8 @@ class ProductFormPage extends StatefulWidget {
 }
 
 class _ProductFormPageState extends State<ProductFormPage> {
+  late GlobalKey<ImageUploadScreenState> _imageUploadKey;
+  String? _imageId;
   final _formKey = GlobalKey<FormState>();
 
   // 各フィールド用コントローラー
@@ -32,6 +34,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   @override
   void initState() {
     super.initState();
+    _imageUploadKey = GlobalKey<ImageUploadScreenState>();
     if (widget.product != null) {
       _nameController.text = widget.product!['name'] ?? '';
       _descriptionController.text = widget.product!['description'] ?? '';
@@ -49,6 +52,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
           throw Exception('No token found');
         }
 
+        setState(() {
+          _imageId =
+              _imageUploadKey.currentState?.getImageId(); // 子の状態から画像IDを取得
+        });
+
         final url = widget.product == null
             ? Uri.parse('${Config.apiUrl}/product')
             : Uri.parse('${Config.apiUrl}/product/${widget.product!['id']}');
@@ -59,6 +67,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
           "price": double.tryParse(_priceController.text) ?? 0.0,
           "stock": int.tryParse(_stockController.text) ?? 0,
           "category": _categoryController.text,
+          'imageId': _imageId,
         };
 
         final response = widget.product == null
@@ -107,6 +116,12 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _priceController.clear();
     _stockController.clear();
     _categoryController.clear();
+
+    // ImageUploadScreenを再構築するためにKeyを変更
+    setState(() {
+      _imageUploadKey =
+          GlobalKey<ImageUploadScreenState>(); // Keyを新しく設定して再構築をトリガー
+    });
   }
 
   @override
@@ -136,9 +151,16 @@ class _ProductFormPageState extends State<ProductFormPage> {
               Text("Upload Product Image", style: TextStyle(fontSize: 18)),
               // SizedBox(height: 10),
 
-              Container(
-                height: 200, // 固定の高さを設定
-                child: ImageUploadScreen(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  double screenWidth = MediaQuery.of(context).size.width;
+                  // double height = constraints.maxWidth < 600 ? 300 : 200;
+                  double height = screenWidth < 600 ? 300 : 200;
+                  return Container(
+                    height: height, // Adjust height based on screen width
+                    child: ImageUploadScreen(key: _imageUploadKey),
+                  );
+                },
               ),
 
               TextFormField(

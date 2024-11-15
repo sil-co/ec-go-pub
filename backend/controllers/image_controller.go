@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"ec-api/models"
+	"ec-api/utils"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var imageCollection *mongo.Collection // MongoDBのコレクション
@@ -24,9 +24,8 @@ func InitImageController(collection *mongo.Collection) {
 }
 
 const (
-	MaxFileSize   = 2 * 1024 * 1024 // 2MB
-	ImageSavePath = "./uploads/"
-	MongoURI      = "mongodb://localhost:27017"
+	MaxFileSize = 2 * 1024 * 1024 // 2MB
+	MongoURI    = "mongodb://localhost:27017"
 )
 
 var (
@@ -35,7 +34,8 @@ var (
 
 // image
 func UploadImage(w http.ResponseWriter, r *http.Request) {
-	// AuthorizationヘッダーからJWTトークンを取得
+	r.ParseMultipartForm(MaxFileSize)
+
 	tokenString := r.Header.Get("Authorization")
 	if tokenString == "" {
 		http.Error(w, "Missing token", http.StatusUnauthorized)
@@ -48,42 +48,6 @@ func UploadImage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
-
-	var product models.Product
-	err = json.NewDecoder(r.Body).Decode(&product)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// 受け取ったuserIDをProductに追加
-	product.UserID = userID
-
-	// 現在の日時をCreatedAtに設定
-	product.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
-
-	_, err = productCollection.InsertOne(context.TODO(), product)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusCreated)
-}
-
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	client, err := mongo.NewClient(options.Client().ApplyURI(MongoURI))
-	if err != nil {
-		log.Fatal(err)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	err = client.Connect(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	imageCollection = client.Database("imageDB").Collection("images")
-
-	r.ParseMultipartForm(MaxFileSize)
 
 	file, handler, err := r.FormFile("image")
 	if err != nil {
@@ -103,9 +67,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filename := primitive.NewObjectID().Hex() + ext
-	filePath := ImageSavePath + filename
-	outFile, err := os.Create(filePath)
+	imagename := primitive.NewObjectID().Hex() + ext
+	imagePath := filepath.Join(utils.GetFilePath(), "..", "resources", "images", imagename)
+	outFile, err := os.Create(imagePath)
 	if err != nil {
 		http.Error(w, "Unable to save the image", http.StatusInternalServerError)
 		return
@@ -119,15 +83,20 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	image := models.Image{
-		URL:      "http://localhost:8080/images/" + filename,
-		Filename: filename,
+		Path:      filepath.Join("resources", "images", imagename),
+		Imagename: imagename,
+		CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 	}
 
-	_, err = imageCollection.InsertOne(context.Background(), image)
+	image.UserID = userID
+
+	result, err := imageCollection.InsertOne(context.TODO(), image)
 	if err != nil {
+		log.Println("Error inserting image metadata into MongoDB:", err)
 		http.Error(w, "Failed to save image metadata", http.StatusInternalServerError)
 		return
 	}
+	image.ID = result.InsertedID.(primitive.ObjectID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(image)

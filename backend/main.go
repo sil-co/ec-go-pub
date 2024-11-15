@@ -63,9 +63,10 @@ func main() {
 	controllers.InitCouponController(couponsCollection)
 	controllers.InitPaymentController(paymentCollection)
 
+	// ルート設定 RESTfull設計
 	r := mux.NewRouter()
 
-	// ルート設定 RESTfull設計
+	r.PathPrefix("/resources/images/").Handler(http.StripPrefix("/resources/images/", http.FileServer(http.Dir("./resources/images"))))
 
 	// users
 	r.HandleFunc("/users", controllers.GetUsers).Methods("GET")
@@ -142,6 +143,8 @@ func main() {
 	r.HandleFunc("/payment", controllers.AddToPayment).Methods("POST")
 	// r.HandleFunc("/payment", controllers.updatePayment).Methods("PUT")
 	// r.HandleFunc("/payment", controllers.deletePayment).Methods("DELETE")
+
+	http.Handle("/", r)
 
 	fmt.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", enableCORS(r)))

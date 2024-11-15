@@ -40,6 +40,23 @@ func GetProductsAll(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		// ImageIDがゼロ値かどうかを確認
+		if !product.ImageID.IsZero() {
+			var image models.Image
+			err := imageCollection.FindOne(context.TODO(), bson.D{{Key: "_id", Value: product.ImageID}}).Decode(&image)
+			if err != nil {
+				if err != mongo.ErrNoDocuments {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			} else {
+				// 画像情報をProductに埋め込む
+				product.Image = image
+				product.Image.UserID = primitive.ObjectID{}
+			}
+		}
+		product.UserID = primitive.ObjectID{}
 		products = append(products, product) // 製品をスライスに追加
 	}
 
@@ -79,12 +96,28 @@ func GetProductsByUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(context.TODO()) // 関数終了時にカーソルをクローズ
 
-	for cursor.Next(context.TODO()) { // カーソルを使用して製品を反復処理
+	for cursor.Next(context.TODO()) {
 		var product models.Product
 		if err := cursor.Decode(&product); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		if !product.ImageID.IsZero() {
+			var image models.Image
+			err := imageCollection.FindOne(context.TODO(), bson.D{{Key: "_id", Value: product.ImageID}}).Decode(&image)
+			if err != nil {
+				if err != mongo.ErrNoDocuments {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			} else {
+				// 画像情報をProductに埋め込む
+				product.Image = image
+				product.Image.UserID = primitive.ObjectID{}
+			}
+		}
+		product.UserID = primitive.ObjectID{}
 		products = append(products, product) // 製品をスライスに追加
 	}
 

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../provider/cart_provider.dart';
 import '../utils/snackbar_utils.dart';
+import '../utils/config.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final Map<String, dynamic> product;
@@ -11,6 +12,12 @@ class ProductDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageUrl = (product['image'] != null &&
+            product['image']['Path'] != null &&
+            product['image']['Path'].isNotEmpty)
+        ? '${Config.apiUrl}/${product['image']['Path']}'
+        : 'assets/no_image.jpg';
+
     return Scaffold(
       appBar: AppBar(
         title: Text(product['name']),
@@ -28,8 +35,8 @@ class ProductDetailPage extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(15),
-                  child: Image.asset(
-                    product['imageUrl'] ?? 'assets/no_image.jpg',
+                  child: Image.network(
+                    imageUrl,
                     height: 250,
                     width: double.infinity,
                     fit: BoxFit.contain,

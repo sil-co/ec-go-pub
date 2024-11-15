@@ -169,7 +169,12 @@ class _ProductsPageState extends State<ProductsPage> {
                 itemCount: snapshot.data!.length,
                 itemBuilder: (context, index) {
                   final product = snapshot.data![index];
-                  final imageUrl = product['imageUrl'] ?? 'assets/no_image.jpg';
+
+                  final imageUrl = (product['image'] != null &&
+                          product['image']['Path'] != null &&
+                          product['image']['Path'].isNotEmpty)
+                      ? '${Config.apiUrl}/${product['image']['Path']}'
+                      : 'assets/no_image.jpg';
 
                   return Container(
                     child: Card(
@@ -185,10 +190,10 @@ class _ProductsPageState extends State<ProductsPage> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.vertical(
                                   top: Radius.circular(10)),
-                              child: Image.asset(
+                              child: Image.network(
                                 imageUrl,
                                 width: double.infinity,
-                                fit: BoxFit.cover,
+                                fit: BoxFit.contain,
                               ),
                             ),
                           ),

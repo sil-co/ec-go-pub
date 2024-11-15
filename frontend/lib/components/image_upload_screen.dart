@@ -2,19 +2,27 @@ import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:frontend/utils/snackbar_utils.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../utils/config.dart';
+import '../utils/auth_service.dart';
 
 class ImageUploadScreen extends StatefulWidget {
+  const ImageUploadScreen({Key? key}) : super(key: key);
   @override
-  _ImageUploadScreenState createState() => _ImageUploadScreenState();
+  ImageUploadScreenState createState() => ImageUploadScreenState();
 }
 
-class _ImageUploadScreenState extends State<ImageUploadScreen> {
+class ImageUploadScreenState extends State<ImageUploadScreen> {
   io.File? _imageFile;
   Uint8List? _webImage;
+  String? _imageId;
   final picker = ImagePicker();
+  final AuthService authService = AuthService();
+  bool isUploading = false; // アップロード中かどうか
+  bool isUploaded = false; // アップロードが成功したかどうか
 
   Future pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -34,13 +42,27 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
   }
 
   Future uploadImage() async {
+    setState(() {
+      isUploading = true;
+    });
+
+    final token = await authService.getToken();
+    if (token == null) {
+      throw Exception('No token found');
+    }
     // アップロード処理
     if (kIsWeb && _webImage != null) {
       // Webでのアップロード処理
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://localhost:8080/image'),
+        Uri.parse('${Config.apiUrl}/image'),
       );
+
+      // ヘッダーにJWTトークンを追加
+      request.headers.addAll({
+        'Authorization': token, // トークンを追加
+        'Content-Type': 'multipart/form-data', // 必要に応じて追加
+      });
 
       // Uint8ListからMultipartFileを作成
       request.files.add(
@@ -56,18 +78,27 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
         if (response.statusCode == 200) {
           final res = await http.Response.fromStream(response);
           final json = jsonDecode(res.body);
-          print("Image uploaded: ${json['url']}");
+          _imageId = json['id'];
+          print("Image uploaded: ${json['id']}");
+          showSuccessSnackbar(context, "Image upload successfully!");
+          setState(() {
+            isUploaded = true;
+          });
         } else {
           print("Failed to upload image: ${response.statusCode}");
         }
       } catch (e) {
         print("Error during upload: $e");
+      } finally {
+        setState(() {
+          isUploading = false;
+        });
       }
     } else if (_imageFile != null) {
       // モバイルアプリでのアップロード処理（参考）
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('http://localhost:8080/upload'),
+        Uri.parse('${Config.apiUrl}/upload'),
       );
 
       request.files.add(
@@ -79,7 +110,7 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
         if (response.statusCode == 200) {
           final res = await http.Response.fromStream(response);
           final json = jsonDecode(res.body);
-          print("Image uploaded: ${json['url']}");
+          print("Image uploaded: ${json['id']}");
         } else {
           print("Failed to upload image: ${response.statusCode}");
         }
@@ -89,73 +120,174 @@ class _ImageUploadScreenState extends State<ImageUploadScreen> {
     }
   }
 
+  String? getImageId() {
+    return _imageId; // 画像IDを取得
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 画像表示部分
-          Container(
-            width: 250,
-            height: 150,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey, width: 2),
-            ),
-            child: _imageFile != null
-                ? Image.file(_imageFile!, fit: BoxFit.contain)
-                : _webImage != null
-                    ? Image.memory(_webImage!, fit: BoxFit.contain)
-                    : Icon(Icons.camera_alt, size: 60, color: Colors.grey),
-          ),
-          SizedBox(width: 20),
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          // double width = constraints.maxWidth;
+          double screenWidth = MediaQuery.of(context).size.width;
 
-          // ボタンを縦に並べる
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: pickImage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+          List<Widget> buildChildren() {
+            return [
+              Container(
+                width: 250,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey, width: 2),
                 ),
-                child: Text(
-                  "Pick Image",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: _imageFile != null
+                    ? Image.file(_imageFile!, fit: BoxFit.contain)
+                    : _webImage != null
+                        ? Image.memory(_webImage!, fit: BoxFit.contain)
+                        : Icon(Icons.camera_alt, size: 60, color: Colors.grey),
               ),
+              SizedBox(width: 20),
               SizedBox(height: 15),
-              ElevatedButton(
-                onPressed: uploadImage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.greenAccent,
-                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              // ボタンを縦に並べる
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 200, // 横幅を指定
+                    child: ElevatedButton(
+                      onPressed: isUploading || isUploaded ? null : pickImage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        isUploaded
+                            ? "Uploaded"
+                            : (isUploading ? "Uploading..." : "Pick Image"),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-                child: Text(
-                  "Upload Image",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  SizedBox(height: 15),
+                  SizedBox(
+                    width: 200, // 横幅を指定
+                    child: ElevatedButton(
+                      onPressed: isUploading || isUploaded ? null : uploadImage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.greenAccent,
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        isUploaded
+                            ? "Uploaded"
+                            : (isUploading ? "Uploading..." : "Upload Image"),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
-          ),
-        ],
+                ],
+              )
+            ];
+          }
+
+          return screenWidth >= 600
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: buildChildren())
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: buildChildren());
+        },
       ),
+      // child: Row(
+      //   mainAxisAlignment: MainAxisAlignment.center,
+      //   children: [
+      //     Container(
+      //       width: 250,
+      //       height: 150,
+      //       decoration: BoxDecoration(
+      //         color: Colors.grey[200],
+      //         borderRadius: BorderRadius.circular(10),
+      //         border: Border.all(color: Colors.grey, width: 2),
+      //       ),
+      //       child: _imageFile != null
+      //           ? Image.file(_imageFile!, fit: BoxFit.contain)
+      //           : _webImage != null
+      //               ? Image.memory(_webImage!, fit: BoxFit.contain)
+      //               : Icon(Icons.camera_alt, size: 60, color: Colors.grey),
+      //     ),
+      //     SizedBox(width: 20),
+      //     SizedBox(height: 15),
+      //     // ボタンを縦に並べる
+      //     Column(
+      //       mainAxisAlignment: MainAxisAlignment.center,
+      //       children: [
+      //         SizedBox(
+      //           width: 200, // 横幅を指定
+      //           child: ElevatedButton(
+      //             onPressed: isUploading || isUploaded ? null : pickImage,
+      //             style: ElevatedButton.styleFrom(
+      //               backgroundColor: Colors.blueAccent,
+      //               padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+      //               shape: RoundedRectangleBorder(
+      //                 borderRadius: BorderRadius.circular(8),
+      //               ),
+      //             ),
+      //             child: Text(
+      //               isUploaded
+      //                   ? "Uploaded"
+      //                   : (isUploading ? "Uploading..." : "Pick Image"),
+      //               style: TextStyle(
+      //                 fontSize: 16,
+      //                 fontWeight: FontWeight.bold,
+      //               ),
+      //             ),
+      //           ),
+      //         ),
+      //         SizedBox(height: 15),
+      //         SizedBox(
+      //           width: 200, // 横幅を指定
+      //           child: ElevatedButton(
+      //             onPressed: isUploading || isUploaded ? null : uploadImage,
+      //             style: ElevatedButton.styleFrom(
+      //               backgroundColor: Colors.greenAccent,
+      //               padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+      //               shape: RoundedRectangleBorder(
+      //                 borderRadius: BorderRadius.circular(8),
+      //               ),
+      //             ),
+      //             child: Text(
+      //               isUploaded
+      //                   ? "Uploaded"
+      //                   : (isUploading ? "Uploading..." : "Upload Image"),
+      //               style: TextStyle(
+      //                 fontSize: 16,
+      //                 fontWeight: FontWeight.bold,
+      //               ),
+      //             ),
+      //           ),
+      //         ),
+      //       ],
+      //     )
+      //   ],
+      // ),
     );
   }
 }

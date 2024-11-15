@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/image_upload_screen.dart';
 
 class ProductEditPage extends StatefulWidget {
   final String id;
@@ -23,16 +24,19 @@ class ProductEditPage extends StatefulWidget {
 }
 
 class _ProductEditPageState extends State<ProductEditPage> {
+  late GlobalKey<ImageUploadScreenState> _imageUploadKey;
   final _formKey = GlobalKey<FormState>();
   late String _name;
   late String _description;
   late double _price;
   late int _stock;
   late String _category;
+  String? _imageId;
 
   @override
   void initState() {
     super.initState();
+    _imageUploadKey = GlobalKey<ImageUploadScreenState>();
     _name = widget.name;
     _description = widget.description;
     _price = widget.price;
@@ -43,6 +47,9 @@ class _ProductEditPageState extends State<ProductEditPage> {
   void _saveProduct() {
     if (_formKey.currentState!.validate()) {
       // ここでAPIにPUTリクエストを送信して製品情報を更新します
+      setState(() {
+        _imageId = _imageUploadKey.currentState?.getImageId(); // 子の状態から画像IDを取得
+      });
       print(
           'Saving Product: $_name, $_description, $_price, $_stock, $_category');
       // API呼び出しコードをここに追加
@@ -67,6 +74,22 @@ class _ProductEditPageState extends State<ProductEditPage> {
           key: _formKey,
           child: ListView(
             children: [
+              // 画像アップロード画面をここに表示
+              Text("Upload Product Image", style: TextStyle(fontSize: 18)),
+              // SizedBox(height: 10),
+
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  double screenWidth = MediaQuery.of(context).size.width;
+                  // double height = constraints.maxWidth < 600 ? 300 : 200;
+                  double height = screenWidth < 600 ? 300 : 200;
+                  return Container(
+                    height: height, // Adjust height based on screen width
+                    child: ImageUploadScreen(key: _imageUploadKey),
+                  );
+                },
+              ),
+
               TextFormField(
                 initialValue: _name,
                 decoration: const InputDecoration(labelText: 'Product Name'),

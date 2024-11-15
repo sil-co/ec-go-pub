@@ -106,4 +106,13 @@ sudo chmod -R 755 /var/www/html/
 sudo ln -sf /etc/nginx/sites-available/flutter_site /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl restart nginx
 
+# Firewall設定
+sudo apt install ufw
+yes | sudo ufw enable
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp
+sudo ufw allow 80/tcp
+sudo ufw status verbose
+
 echo "Deployment completed. You can now access your Flutter site at http://your_domain_or_ip"
