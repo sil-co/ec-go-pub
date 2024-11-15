@@ -37,6 +37,9 @@ echo "Cloning or updating the GitHub repository..."
 if [ -d "/var/www/html/ec-app" ]; then
     echo "Project directory already exists. Pulling latest changes..."
     cd /var/www/html/ec-app
+    git config --global core.autocrlf true
+    git config core.fileMode false
+    git config --global --add safe.directory /var/www/html/ec-app
     GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git pull
     cd /var/www/html/ec-app/backend
 else
@@ -78,8 +81,19 @@ server {
     root /var/www/html/ec-app/frontend/build/web;
     index index.html index.htm;
 
+    # フロントエンドへのリクエスト
     location / {
         try_files \$uri \$uri/ /index.html;
+    }
+
+    # Goサーバーへのリバースプロキシ
+    location /api/ {
+        rewrite ^/api/?(.*)$ /$1 break;
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
 EOL

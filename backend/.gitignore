@@ -35,6 +35,7 @@ Thumbs.db
 
 # Go modules
 go.sum
+/app
 
 /resources/**/*
 /docker-env/data/**/*
