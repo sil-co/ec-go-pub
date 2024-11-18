@@ -80,6 +80,33 @@ class CartProvider with ChangeNotifier {
     }
   }
 
+  Future<void> deleteCarts() async {
+    try {
+      final token = await authService.getToken();
+      if (token == null) {
+        throw Exception('No token found');
+      }
+
+      final url = Uri.parse('$cartsApiUrl'); // カートを全削除するエンドポイント
+      final response = await http.delete(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token,
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        await getCarts(); // カートを更新
+        notifyListeners(); // UI更新
+      } else {
+        throw Exception('Failed to clear cart');
+      }
+    } catch (e) {
+      throw Exception('Failed to clear cart');
+    }
+  }
+
   int get itemLength => _cartItems.length;
 
   int get itemCount =>

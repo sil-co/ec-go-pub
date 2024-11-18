@@ -82,6 +82,7 @@ func main() {
 
 	// carts
 	r.HandleFunc("/carts", controllers.GetCarts).Methods("GET")
+	r.HandleFunc("/carts", controllers.DeleteCarts).Methods("DELETE")
 	// cart
 	r.HandleFunc("/cart", controllers.GetCart).Methods("GET")
 	r.HandleFunc("/cart", controllers.AddToCart).Methods("POST")

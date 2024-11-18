@@ -90,6 +90,40 @@ func GetCarts(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func DeleteCarts(w http.ResponseWriter, r *http.Request) {
+	// AuthorizationヘッダーからJWTトークンを取得
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+
+	// トークンの検証
+	claims, err := ValidateJWT(tokenString)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	userID := claims.UserID
+
+	// ユーザーのカートを削除
+	filter := bson.M{"userID": userID}
+	_, err = cartCollection.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		http.Error(w, "Failed to clear cart", http.StatusInternalServerError)
+		return
+	}
+
+	// 成功レスポンスを送信
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]string{"message": "Cart cleared successfully"}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}
+
 // cart
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	userID := r.URL.Query().Get("userID") // クエリパラメータからユーザーIDを取得

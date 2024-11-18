@@ -189,6 +189,7 @@ class CartPage extends StatelessWidget {
                       };
                       final submitStatus = await submitOrder(order);
                       if (submitStatus) {
+                        await cart.deleteCarts();
                         _showConfirmationDialog(
                             context, 'Thank you for your purchase!');
                       } else {
