@@ -51,10 +51,10 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   @override
   void initState() {
     super.initState();
-    _futureOrders = fetchOrders();
+    _futureOrders = getOrders();
   }
 
-  Future<List<Order>> fetchOrders() async {
+  Future<List<Order>> getOrders() async {
     final token = await authService.getToken();
     if (token == null) {
       throw Exception('No token found');
