@@ -166,7 +166,7 @@ class OrderCard extends StatelessWidget {
                         return {
                           'name': product['product']['name'],
                           'quantity': product['quantity'],
-                          'price': product['product']['price']
+                          'price': product['product']['price'],
                         };
                       }).toList(),
                     ),

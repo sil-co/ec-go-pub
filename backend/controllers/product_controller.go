@@ -233,7 +233,9 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	if product.Category != "" {
 		updateFields["category"] = product.Category
 	}
-
+	if product.ImageID.Hex() != "" {
+		updateFields["imageID"] = product.ImageID
+	}
 	if len(updateFields) == 0 {
 		http.Error(w, "No fields to update", http.StatusBadRequest)
 		return

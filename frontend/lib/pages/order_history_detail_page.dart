@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // DateFormatのために必要
+import 'product_detail_page.dart';
 
 class OrderHistoryDetailPage extends StatelessWidget {
   final String orderId;
@@ -78,6 +79,7 @@ class OrderHistoryDetailPage extends StatelessWidget {
                 itemCount: products.length,
                 itemBuilder: (context, index) {
                   final product = products[index];
+                  print(product);
                   return Card(
                     elevation: 4,
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -98,6 +100,17 @@ class OrderHistoryDetailPage extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      // todo: tap時の詳細ページ遷移
+                      // onTap: () {
+                      //   // Navigate to the product detail page
+                      //   Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //       builder: (context) =>
+                      //           ProductDetailPage(product: product),
+                      //     ),
+                      //   );
+                      // },
                     ),
                   );
                 },

@@ -19,7 +19,9 @@ class ProductFormPage extends StatefulWidget {
 
 class _ProductFormPageState extends State<ProductFormPage> {
   late GlobalKey<ImageUploadScreenState> _imageUploadKey;
+  late ImageUploadScreen _imageUploadScreen; // ImageUploadScreen のインスタンスを保持
   String? _imageId;
+  String? imageUrl;
   final _formKey = GlobalKey<FormState>();
 
   // 各フィールド用コントローラー
@@ -41,6 +43,28 @@ class _ProductFormPageState extends State<ProductFormPage> {
       _priceController.text = widget.product!['price']?.toString() ?? '';
       _stockController.text = widget.product!['stock']?.toString() ?? '';
       _categoryController.text = widget.product!['category'] ?? '';
+
+      // 初期画像URLを取得
+      imageUrl = (widget.product!['image'] != null &&
+              widget.product!['image']['Path'] != null &&
+              widget.product!['image']['Path'].isNotEmpty)
+          ? '${Config.apiUrl}/${widget.product!['image']['Path']}'
+              .replaceAll('\\', '/')
+          : null;
+
+      // ImageUploadScreen に初期URLを渡す
+      // setState(() {
+      //   _imageUploadKey = GlobalKey<ImageUploadScreenState>();
+      //   _imageUploadScreen = ImageUploadScreen(
+      //     key: _imageUploadKey,
+      //     initialImageUrl: imageUrl,
+      //   );
+      // });
+      // ImageUploadScreen に初期URLを渡す
+      // _imageUploadScreen = ImageUploadScreen(
+      //   key: _imageUploadKey,
+      //   initialImageUrl: imageUrl,
+      // );
     }
   }
 
@@ -67,7 +91,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
           "price": double.tryParse(_priceController.text) ?? 0.0,
           "stock": int.tryParse(_stockController.text) ?? 0,
           "category": _categoryController.text,
-          'imageId': _imageId,
+          'imageID': _imageId,
         };
 
         final response = widget.product == null
@@ -158,7 +182,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   double height = screenWidth < 600 ? 300 : 200;
                   return Container(
                     height: height, // Adjust height based on screen width
-                    child: ImageUploadScreen(key: _imageUploadKey),
+                    child: ImageUploadScreen(
+                      key: _imageUploadKey,
+                      initialImageUrl: imageUrl,
+                    ),
                   );
                 },
               ),
@@ -174,6 +201,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 decoration: const InputDecoration(labelText: 'Description'),
                 validator: (value) =>
                     value!.isEmpty ? 'Enter description' : null,
+                maxLines:
+                    5, // Increase the number of lines (you can adjust this as needed)
+                keyboardType: TextInputType.multiline, // Allow multiline input
+                minLines: 3, // Set the minimum number of lines if needed
               ),
               TextFormField(
                 controller: _priceController,

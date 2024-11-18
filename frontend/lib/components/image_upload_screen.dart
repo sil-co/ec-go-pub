@@ -10,7 +10,10 @@ import '../utils/config.dart';
 import '../utils/auth_service.dart';
 
 class ImageUploadScreen extends StatefulWidget {
-  const ImageUploadScreen({Key? key}) : super(key: key);
+  final String? initialImageUrl; // 初期画像URLを受け取る
+
+  ImageUploadScreen({Key? key, this.initialImageUrl}) : super(key: key);
+
   @override
   ImageUploadScreenState createState() => ImageUploadScreenState();
 }
@@ -18,11 +21,34 @@ class ImageUploadScreen extends StatefulWidget {
 class ImageUploadScreenState extends State<ImageUploadScreen> {
   io.File? _imageFile;
   Uint8List? _webImage;
+  Uint8List? _initialImage;
   String? _imageId;
   final picker = ImagePicker();
   final AuthService authService = AuthService();
   bool isUploading = false; // アップロード中かどうか
   bool isUploaded = false; // アップロードが成功したかどうか
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.initialImageUrl != null) {
+      _loadInitialImage(widget.initialImageUrl!); // 初期画像を読み込む
+    }
+  }
+
+  Future<void> _loadInitialImage(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        setState(() {
+          _initialImage = response.bodyBytes; // 初期画像をセット
+        });
+      }
+    } catch (e) {
+      print("Failed to load initial image: $e");
+    }
+  }
 
   Future pickImage() async {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -79,7 +105,6 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
           final res = await http.Response.fromStream(response);
           final json = jsonDecode(res.body);
           _imageId = json['id'];
-          print("Image uploaded: ${json['id']}");
           showSuccessSnackbar(context, "Image upload successfully!");
           setState(() {
             isUploaded = true;
@@ -147,7 +172,11 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
                     ? Image.file(_imageFile!, fit: BoxFit.contain)
                     : _webImage != null
                         ? Image.memory(_webImage!, fit: BoxFit.contain)
-                        : Icon(Icons.camera_alt, size: 60, color: Colors.grey),
+                        : _initialImage != null
+                            ? Image.memory(_initialImage!, fit: BoxFit.contain)
+                            : Icon(Icons.camera_alt,
+                                size: 60, color: Colors.grey),
+                // : Icon(Icons.camera_alt, size: 60, color: Colors.grey),
               ),
               SizedBox(width: 20),
               SizedBox(height: 15),
@@ -216,78 +245,6 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
                   children: buildChildren());
         },
       ),
-      // child: Row(
-      //   mainAxisAlignment: MainAxisAlignment.center,
-      //   children: [
-      //     Container(
-      //       width: 250,
-      //       height: 150,
-      //       decoration: BoxDecoration(
-      //         color: Colors.grey[200],
-      //         borderRadius: BorderRadius.circular(10),
-      //         border: Border.all(color: Colors.grey, width: 2),
-      //       ),
-      //       child: _imageFile != null
-      //           ? Image.file(_imageFile!, fit: BoxFit.contain)
-      //           : _webImage != null
-      //               ? Image.memory(_webImage!, fit: BoxFit.contain)
-      //               : Icon(Icons.camera_alt, size: 60, color: Colors.grey),
-      //     ),
-      //     SizedBox(width: 20),
-      //     SizedBox(height: 15),
-      //     // ボタンを縦に並べる
-      //     Column(
-      //       mainAxisAlignment: MainAxisAlignment.center,
-      //       children: [
-      //         SizedBox(
-      //           width: 200, // 横幅を指定
-      //           child: ElevatedButton(
-      //             onPressed: isUploading || isUploaded ? null : pickImage,
-      //             style: ElevatedButton.styleFrom(
-      //               backgroundColor: Colors.blueAccent,
-      //               padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-      //               shape: RoundedRectangleBorder(
-      //                 borderRadius: BorderRadius.circular(8),
-      //               ),
-      //             ),
-      //             child: Text(
-      //               isUploaded
-      //                   ? "Uploaded"
-      //                   : (isUploading ? "Uploading..." : "Pick Image"),
-      //               style: TextStyle(
-      //                 fontSize: 16,
-      //                 fontWeight: FontWeight.bold,
-      //               ),
-      //             ),
-      //           ),
-      //         ),
-      //         SizedBox(height: 15),
-      //         SizedBox(
-      //           width: 200, // 横幅を指定
-      //           child: ElevatedButton(
-      //             onPressed: isUploading || isUploaded ? null : uploadImage,
-      //             style: ElevatedButton.styleFrom(
-      //               backgroundColor: Colors.greenAccent,
-      //               padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-      //               shape: RoundedRectangleBorder(
-      //                 borderRadius: BorderRadius.circular(8),
-      //               ),
-      //             ),
-      //             child: Text(
-      //               isUploaded
-      //                   ? "Uploaded"
-      //                   : (isUploading ? "Uploading..." : "Upload Image"),
-      //               style: TextStyle(
-      //                 fontSize: 16,
-      //                 fontWeight: FontWeight.bold,
-      //               ),
-      //             ),
-      //           ),
-      //         ),
-      //       ],
-      //     )
-      //   ],
-      // ),
     );
   }
 }
