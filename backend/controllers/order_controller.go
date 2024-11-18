@@ -4,6 +4,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -86,9 +87,14 @@ func GetOrders(w http.ResponseWriter, r *http.Request) {
 
 		for _, orderProduct := range order.Products {
 			var product models.Product // Productモデルを定義していると仮定
-			err := productCollection.FindOne(context.TODO(), bson.M{"_id": orderProduct.ProductID}).Decode(&product)
+			err = productCollection.FindOne(context.TODO(), bson.M{"_id": orderProduct.ProductID}).Decode(&product)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				if err == mongo.ErrNoDocuments {
+					fmt.Printf("No product found for ID: %v\n", orderProduct.ProductID)
+					continue // 存在しない場合はスキップ
+				}
+				fmt.Printf("Database error: %v\n", err)
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
 
