@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/models/product.dart';
 import 'package:provider/provider.dart';
 
 import '../provider/cart_provider.dart';
@@ -6,21 +7,25 @@ import '../utils/snackbar_utils.dart';
 import '../utils/config.dart';
 
 class ProductDetailPage extends StatelessWidget {
-  final Map<String, dynamic> product;
+  final Product product;
 
   const ProductDetailPage({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = (product['image'] != null &&
-            product['image']['Path'] != null &&
-            product['image']['Path'].isNotEmpty)
-        ? '${Config.apiUrl}/${product['image']['Path']}'
+    // final imageUrl = (product['image'] != null &&
+    //         product['image']['Path'] != null &&
+    //         product['image']['Path'].isNotEmpty)
+    //     ? '${Config.apiUrl}/${product['image']['Path']}'
+    //     : 'assets/no_image.jpg';
+
+    final imageUrl = product.image?.path?.isNotEmpty == true
+        ? '${Config.apiUrl}/${product.image!.path}'
         : 'assets/no_image.jpg';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(product['name']),
+        title: Text(product.name),
         centerTitle: true,
         backgroundColor: Colors.blueAccent,
       ),
@@ -44,7 +49,7 @@ class ProductDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  product['name'],
+                  product.name,
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
@@ -54,7 +59,7 @@ class ProductDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '￥${product['price'].toStringAsFixed(0)}',
+                  '￥${product.price.toStringAsFixed(0)}',
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w500,
@@ -64,7 +69,7 @@ class ProductDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  product['description'] ?? 'No description available.',
+                  product.description ?? 'No description available.',
                   style: const TextStyle(
                     fontSize: 16,
                     color: Colors.black54,

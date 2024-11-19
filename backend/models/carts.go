@@ -14,6 +14,6 @@ type Cart struct {
 }
 
 type CartProduct struct {
-	ProductID primitive.ObjectID `bson:"productID" json:"productID"`
-	Quantity  int                `bson:"quantity" json:"quantity"`
+	Product  Product `bson:"product" json:"product"`
+	Quantity int     `bson:"quantity" json:"quantity"`
 }

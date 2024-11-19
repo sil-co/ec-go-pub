@@ -1,7 +1,9 @@
+import 'package:frontend/models/product.dart';
+
 class Order {
   final String id;
   final String userId;
-  final List<OrderProduct> products;
+  final List<Product> products;
   final double totalAmount;
   final String status;
   final DateTime orderedAt;
@@ -13,15 +15,5 @@ class Order {
     required this.totalAmount,
     required this.status,
     required this.orderedAt,
-  });
-}
-
-class OrderProduct {
-  final String productId;
-  final int quantity;
-
-  OrderProduct({
-    required this.productId,
-    required this.quantity,
   });
 }

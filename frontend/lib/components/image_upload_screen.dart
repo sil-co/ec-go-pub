@@ -31,7 +31,6 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
   @override
   void initState() {
     super.initState();
-
     if (widget.initialImageUrl != null) {
       _loadInitialImage(widget.initialImageUrl!); // 初期画像を読み込む
     }

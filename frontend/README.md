@@ -20,12 +20,11 @@
 - [済] 商品編集ページ
 - [済] bash scriptによるサーバー自動構築
 - [済] 画像投稿
-- 発表資料 Word Canva
+- [済] 発表資料 Word
 
 ## After
-- OrderDetails➔商品詳細へのリンク Modelのリファクタが必要
+- OrderDetails➔商品詳細へのリンク Modelのリファクタが必要、ついでにCartも
 - メール認証
-- 2fa
 - 決済
 - Profileページ
 - 管理者用ページ

@@ -1,6 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // DateFormatのために必要
+import 'package:http/http.dart' as http;
+
 import 'product_detail_page.dart';
+import '../utils/config.dart';
+import '../models/product.dart';
 
 class OrderHistoryDetailPage extends StatelessWidget {
   final String orderId;
@@ -21,6 +26,24 @@ class OrderHistoryDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('yyyy/MM/dd HH:mm');
+
+    Future<Map<String, dynamic>> getProduct(String productID) async {
+      print(productID);
+      final response = await http.get(Uri.parse(
+          '${Config.apiUrl}/product/${productID}')); // 適切なURLに変更してください
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> productData = jsonDecode(response.body);
+
+        // productDataが空でないか確認し、Mapを返す
+        if (productData.isNotEmpty) {
+          return productData;
+        } else {
+          throw Exception('Product data is empty');
+        }
+      } else {
+        throw Exception('Failed to load product');
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -79,7 +102,7 @@ class OrderHistoryDetailPage extends StatelessWidget {
                 itemCount: products.length,
                 itemBuilder: (context, index) {
                   final product = products[index];
-                  print(product);
+
                   return Card(
                     elevation: 4,
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -101,15 +124,19 @@ class OrderHistoryDetailPage extends StatelessWidget {
                         ),
                       ),
                       // todo: tap時の詳細ページ遷移
-                      // onTap: () {
-                      //   // Navigate to the product detail page
-                      //   Navigator.push(
-                      //     context,
-                      //     MaterialPageRoute(
-                      //       builder: (context) =>
-                      //           ProductDetailPage(product: product),
-                      //     ),
-                      //   );
+                      // onTap: () async {
+                      //   try {
+                      //     final productData = await getProduct(product['id']);
+                      //     Navigator.push(
+                      //       context,
+                      //       MaterialPageRoute(
+                      //         builder: (context) =>
+                      //             ProductDetailPage(product: productData),
+                      //       ),
+                      //     );
+                      //   } catch (e) {
+                      //     print('Error ${e}');
+                      //   }
                       // },
                     ),
                   );

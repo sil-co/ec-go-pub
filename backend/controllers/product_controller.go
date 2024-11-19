@@ -131,17 +131,23 @@ func GetProductsByUser(w http.ResponseWriter, r *http.Request) {
 
 // /product
 func GetProduct(w http.ResponseWriter, r *http.Request) {
-	productID := r.URL.Query().Get("id") // クエリパラメータから製品IDを取得
-	var product models.Product
-
-	// 製品IDをObjectIDに変換
-	id, err := primitive.ObjectIDFromHex(productID)
+	// URLパラメータからProductIdを取得
+	params := mux.Vars(r)
+	productID, err := primitive.ObjectIDFromHex(params["ProductId"])
 	if err != nil {
 		http.Error(w, "Invalid product ID", http.StatusBadRequest)
 		return
 	}
+	var product models.Product
 
-	err = productCollection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&product) // 製品IDで検索
+	// // 製品IDをObjectIDに変換
+	// id, err := primitive.ObjectIDFromHex(productID)
+	// if err != nil {
+	// 	http.Error(w, "Invalid product ID", http.StatusBadRequest)
+	// 	return
+	// }
+
+	err = productCollection.FindOne(context.TODO(), bson.M{"_id": productID}).Decode(&product) // 製品IDで検索
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -176,6 +182,18 @@ func AddToProduct(w http.ResponseWriter, r *http.Request) {
 
 	// 現在の日時をCreatedAtに設定
 	product.CreatedAt = primitive.NewDateTimeFromTime(time.Now())
+
+	// imageID が渡されている場合、imageIDを使用してImageを取得
+	if product.ImageID != primitive.NilObjectID {
+		var image models.Image
+		err := imageCollection.FindOne(context.TODO(), bson.M{"_id": product.ImageID}).Decode(&image)
+		if err != nil {
+			http.Error(w, "Image not found", http.StatusBadRequest)
+			return
+		}
+		// ImageオブジェクトをProductのimageフィールドにセット
+		product.Image = image
+	}
 
 	_, err = productCollection.InsertOne(context.TODO(), product)
 	if err != nil {

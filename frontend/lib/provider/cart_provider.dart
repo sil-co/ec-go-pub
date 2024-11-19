@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import '../utils/auth_service.dart';
 import '../utils/config.dart';
+import '../models/product.dart';
 
 class CartProvider with ChangeNotifier {
   final List<Map<String, dynamic>> _cartItems = [];
@@ -13,14 +14,13 @@ class CartProvider with ChangeNotifier {
 
   List<Map<String, dynamic>> get cartItems => _cartItems;
 
-  Future<void> addToCart(Map<String, dynamic> product) async {
+  Future<void> addToCart(Product product) async {
     final token = await authService.getToken();
     if (token == null) {
       throw Exception('No token found');
     }
-
     final products = {
-      'productId': product['id'], // 商品IDを指定
+      'product': product.toJson(), // 商品IDを指定
       'quantity': 1 // 数量を指定
     };
 
@@ -34,23 +34,20 @@ class CartProvider with ChangeNotifier {
       body: jsonEncode(products),
     );
 
+    print(response);
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       // カートへの追加成功
-      // _cartItems.add(product);
       await getCarts();
       notifyListeners(); // リスナーに通知してUIを更新
     } else {
+      print(response.statusCode);
       // エラー処理
       throw Exception('Failed to add to cart');
     }
   }
 
-  // void removeFromCart(Map<String, dynamic> product) {
-  //   _cartItems.remove(product);
-  //   notifyListeners();
-  // }
-
-  Future<void> removeFromCart(Map<String, dynamic> product) async {
+  Future<void> removeFromCart(Map<String, dynamic> productData) async {
     try {
       final token = await authService.getToken();
       if (token == null) {
@@ -59,7 +56,7 @@ class CartProvider with ChangeNotifier {
 
       // クエリパラメータに商品IDと数量を追加
       final url = Uri.parse(
-          '$cartApiUrl?productId=${product['productId']}&quantity=${product['quantity']}');
+          '$cartApiUrl?productId=${productData['product'].id}&quantity=${productData['quantity']}');
 
       final response = await http.delete(
         url,
@@ -118,30 +115,55 @@ class CartProvider with ChangeNotifier {
       throw Exception('No token found');
     }
 
-    // final response = await http.get(Uri.parse('$cartApiUrl?userId=$userId'));
     final response = await http.get(Uri.parse(cartsApiUrl), headers: {
       'Content-Type': 'application/json',
       'Authorization': token,
     });
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final productData = jsonDecode(response.body);
-      _cartItems.clear(); // 既存のアイテムをクリア
-      // productData が空の場合、何も追加せずにreturn
-      if (productData is! List || productData.isEmpty) {
-        notifyListeners(); // UIを更新
-        return;
+      final decodedResponse = jsonDecode(response.body);
+
+      if (decodedResponse is! Map<String, dynamic>) {
+        throw Exception('Unexpected response format');
       }
 
-      // productDetailsが返ってきた場合の処理
-      for (var product in productData) {
+      final cartData = decodedResponse;
+
+      _cartItems.clear(); // 既存のアイテムをクリア
+
+      // productsリストを取得
+      final products = cartData['products'];
+      if (products is! List) {
+        notifyListeners(); // UIを更新
+        return; // productsがリストでなければ終了
+      }
+
+      for (var productEntry in products) {
+        if (productEntry is! Map<String, dynamic>) {
+          continue; // productEntryがMapでなければスキップ
+        }
+
+        final product = productEntry['product'];
+        if (product is! Map<String, dynamic>) {
+          continue; // productがMapでなければスキップ
+        }
+
+        final productData = Product.fromJson(product);
+
         _cartItems.add({
-          'productId': product['productID'], // カートに登録されている商品のID
-          'quantity': product['quantity'], // カートに登録されている商品の数量
-          'name': product['name'], // 商品名
-          'description': product['description'], // 商品の説明
-          'price': product['price'], // 商品の価格
-          'stock': product['stock'], // 在庫数
+          'product': productData, // Productオブジェクトをそのまま追加
+          'quantity': productEntry['quantity'], // カートに登録されている数量
         });
+
+        // _cartItems.add({
+        //   'productId': product['id'], // 商品ID
+        //   'quantity': productEntry['quantity'], // カートに登録されている数量
+        //   'name': product['name'], // 商品名
+        //   'description': product['description'], // 商品説明
+        //   'price': product['price'], // 商品価格
+        //   'stock': product['stock'], // 在庫数
+        //   'image': product['image'], // 商品画像 (必要なら)
+        // });
       }
       notifyListeners(); // UIを更新
     } else {

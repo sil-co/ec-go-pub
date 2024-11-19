@@ -22,10 +22,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    fetchCartData(); // カートの取得を初期化時に呼び出す
+    getCartData(); // カートの取得を初期化時に呼び出す
   }
 
-  Future<void> fetchCartData() async {
+  Future<void> getCartData() async {
     try {
       await Provider.of<CartProvider>(context, listen: false).getCarts();
       setState(() {
