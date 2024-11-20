@@ -15,15 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// type CartProductDetail struct {
-// 	ProductID   primitive.ObjectID `json:"productID"`
-// 	Quantity    int                `json:"quantity"`
-// 	Name        string             `json:"name"`
-// 	Description string             `json:"description"`
-// 	Price       float64            `json:"price"`
-// 	Stock       int                `json:"stock"`
-// }
-
 var cartCollection *mongo.Collection // MongoDBのコレクション
 
 func InitCartController(collection *mongo.Collection) {
@@ -53,21 +44,21 @@ func GetCarts(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// カートが見つからない場合、空のカートを返す
 		cart = models.Cart{
-			UserID:   userID,
-			Products: []models.CartProduct{}, // 空の製品リスト
+			UserID:      userID,
+			CartProduct: []models.CartProduct{}, // 空の製品リスト
 		}
 	} else {
 		// カート内の各製品について詳細を取得
-		for i := range cart.Products {
+		for i := range cart.CartProduct {
 			var product models.Product
-			err := productCollection.FindOne(context.TODO(), bson.M{"_id": cart.Products[i].Product.ID}).Decode(&product)
+			err := productCollection.FindOne(context.TODO(), bson.M{"_id": cart.CartProduct[i].Product.ID}).Decode(&product)
 			if err != nil {
 				// 製品が見つからない場合、その製品をカートから除外
-				cart.Products = append(cart.Products[:i], cart.Products[i+1:]...)
+				cart.CartProduct = append(cart.CartProduct[:i], cart.CartProduct[i+1:]...)
 				continue
 			}
 			// 詳細情報を埋める
-			cart.Products[i].Product = product
+			cart.CartProduct[i].Product = product
 		}
 	}
 
@@ -143,21 +134,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	userID := claims.UserID
-
-	var product models.Product
-	err = productCollection.FindOne(context.TODO(), bson.M{"_id": cartProduct.Product.ID}).Decode(&product)
-	if err == mongo.ErrNoDocuments {
-		http.Error(w, "Product not found", http.StatusNotFound)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// 製品の詳細を更新してセット
-	cartProduct.Product = product
 
 	// 既存のカートを取得
 	var existingCart models.Cart
@@ -166,10 +143,10 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 	if err == mongo.ErrNoDocuments {
 		// カートが存在しない場合、新しいカートを作成
 		newCart := models.Cart{
-			UserID:    userID,
-			Products:  []models.CartProduct{cartProduct}, // 新しい商品を追加
-			CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-			UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+			UserID:      userID,
+			CartProduct: []models.CartProduct{cartProduct}, // 新しい商品を追加
+			CreatedAt:   primitive.NewDateTimeFromTime(time.Now()),
+			UpdatedAt:   primitive.NewDateTimeFromTime(time.Now()),
 		}
 
 		_, err = cartCollection.InsertOne(context.TODO(), newCart)
@@ -183,14 +160,13 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	// カートが存在する場合、商品のリストを更新
 	productExists := false
 
-	for i, existingProduct := range existingCart.Products {
+	for i, existingProduct := range existingCart.CartProduct {
 		if existingProduct.Product.ID == cartProduct.Product.ID {
 			// 同じ商品が存在する場合、数量を更新
-			existingCart.Products[i].Quantity += cartProduct.Quantity
+			existingCart.CartProduct[i].Quantity += cartProduct.Quantity
 			productExists = true
 			break
 		}
@@ -198,7 +174,7 @@ func AddToCart(w http.ResponseWriter, r *http.Request) {
 
 	// 同じ商品が存在しない場合、新しい商品を追加
 	if !productExists {
-		existingCart.Products = append(existingCart.Products, cartProduct)
+		existingCart.CartProduct = append(existingCart.CartProduct, cartProduct)
 	}
 
 	// 更新日時を設定
@@ -273,7 +249,7 @@ func DeleteCart(w http.ResponseWriter, r *http.Request) {
 
 	// 商品がカートにあるかチェック
 	productIndex := -1
-	for i, existingProduct := range existingCart.Products {
+	for i, existingProduct := range existingCart.CartProduct {
 		if existingProduct.Product.ID == productObjectID {
 			productIndex = i
 			break
@@ -286,10 +262,10 @@ func DeleteCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 数量を減らし、0になったら削除
-	if existingCart.Products[productIndex].Quantity > quantity {
-		existingCart.Products[productIndex].Quantity -= quantity
+	if existingCart.CartProduct[productIndex].Quantity > quantity {
+		existingCart.CartProduct[productIndex].Quantity -= quantity
 	} else {
-		existingCart.Products = append(existingCart.Products[:productIndex], existingCart.Products[productIndex+1:]...)
+		existingCart.CartProduct = append(existingCart.CartProduct[:productIndex], existingCart.CartProduct[productIndex+1:]...)
 	}
 
 	// 更新日時を設定

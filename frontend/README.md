@@ -21,9 +21,9 @@
 - [済] bash scriptによるサーバー自動構築
 - [済] 画像投稿
 - [済] 発表資料 Word
+- [済] OrderDetails➔商品詳細へのリンク Modelのリファクタが必要、ついでにCartも
 
 ## After
-- OrderDetails➔商品詳細へのリンク Modelのリファクタが必要、ついでにCartも
 - メール認証
 - 決済
 - Profileページ

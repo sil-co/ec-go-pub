@@ -140,13 +140,6 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	var product models.Product
 
-	// // 製品IDをObjectIDに変換
-	// id, err := primitive.ObjectIDFromHex(productID)
-	// if err != nil {
-	// 	http.Error(w, "Invalid product ID", http.StatusBadRequest)
-	// 	return
-	// }
-
 	err = productCollection.FindOne(context.TODO(), bson.M{"_id": productID}).Decode(&product) // 製品IDで検索
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -261,8 +254,6 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 	// 該当のプロダクトを更新
 	filter := bson.M{"_id": productID, "userID": userID}
-	// update := bson.M{"$set": product}
-	// result, err := productCollection.UpdateOne(context.TODO(), filter, update)
 	update := bson.M{"$set": updateFields}
 	result, err := productCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil || result.MatchedCount == 0 {

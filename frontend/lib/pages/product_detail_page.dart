@@ -8,8 +8,14 @@ import '../utils/config.dart';
 
 class ProductDetailPage extends StatelessWidget {
   final Product product;
+  final bool showAddToCartButton;
 
-  const ProductDetailPage({super.key, required this.product});
+  // const ProductDetailPage({super.key, required this.product});
+  const ProductDetailPage({
+    Key? key,
+    required this.product,
+    required this.showAddToCartButton,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -72,37 +78,38 @@ class ProductDetailPage extends StatelessWidget {
                   product.description ?? 'No description available.',
                   style: const TextStyle(
                     fontSize: 16,
-                    color: Colors.black54,
+                    color: Color.fromARGB(137, 132, 99, 99),
                   ),
                   textAlign: TextAlign.center, // Center the text
                 ),
                 const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: () async {
-                    // Handle the add to cart action
-                    try {
-                      await Provider.of<CartProvider>(context, listen: false)
-                          .addToCart(product);
-                      showSuccessSnackbar(context, 'Added to Cart');
-                    } catch (e) {
-                      showErrorSnackbar(context, 'Failed to add to cart');
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.blueAccent,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 15,
-                        horizontal:
-                            30), // Adjust padding for a better button size
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                if (showAddToCartButton)
+                  ElevatedButton(
+                    onPressed: () async {
+                      // Handle the add to cart action
+                      try {
+                        await Provider.of<CartProvider>(context, listen: false)
+                            .addToCart(product);
+                        showSuccessSnackbar(context, 'Added to Cart');
+                      } catch (e) {
+                        showErrorSnackbar(context, 'Failed to add to cart');
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.blueAccent,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 15,
+                          horizontal:
+                              30), // Adjust padding for a better button size
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Add to Cart',
+                      style: TextStyle(fontSize: 18),
                     ),
                   ),
-                  child: const Text(
-                    'Add to Cart',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
               ],
             ),
           ),

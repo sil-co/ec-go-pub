@@ -79,8 +79,13 @@ class _ProductsPageState extends State<ProductsPage> {
     }
   }
 
-  Future<List<Product>> getAllOrMyProducts() {
-    return widget.isMine ? getMyProducts() : getProducts();
+  Future<List<Product>> getAllOrMyProducts() async {
+    try {
+      return widget.isMine ? await getMyProducts() : await getProducts();
+    } catch (e) {
+      print(e);
+      return <Product>[]; // Explicitly return an empty List<Product>
+    }
   }
 
   void _refreshProducts() {
@@ -236,8 +241,11 @@ class _ProductsPageState extends State<ProductsPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        ProductDetailPage(product: product),
+                                    builder: (context) => ProductDetailPage(
+                                      product: product,
+                                      showAddToCartButton:
+                                          widget.isMine ? false : true,
+                                    ),
                                   ),
                                 );
                               },

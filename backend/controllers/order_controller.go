@@ -4,7 +4,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -62,7 +61,7 @@ func GetOrders(w http.ResponseWriter, r *http.Request) {
 
 	userID := claims.UserID
 
-	var orders []OrderWithProducts
+	var orders []models.Order
 
 	options := options.Find().SetSort(bson.D{
 		{Key: "orderedat", Value: -1},
@@ -82,45 +81,8 @@ func GetOrders(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// プロダクト情報を取得するためのスライス
-		var productsInfo []OrderProductInfo
-
-		for _, orderProduct := range order.Products {
-			var product models.Product // Productモデルを定義していると仮定
-			err = productCollection.FindOne(context.TODO(), bson.M{"_id": orderProduct.ProductID}).Decode(&product)
-			if err != nil {
-				if err == mongo.ErrNoDocuments {
-					fmt.Printf("No product found for ID: %v\n", orderProduct.ProductID)
-					continue // 存在しない場合はスキップ
-				}
-				fmt.Printf("Database error: %v\n", err)
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-
-			// プロダクト情報を構築
-			productsInfo = append(productsInfo, OrderProductInfo{
-				ProductID: orderProduct.ProductID,
-				Quantity:  orderProduct.Quantity,
-				Product: ProductInfo{
-					ID:          product.ID,
-					Name:        product.Name,
-					Description: product.Description,
-					Price:       product.Price,
-					Stock:       product.Stock,
-				},
-			})
-		}
-
-		// 注文データを構築
-		orders = append(orders, OrderWithProducts{
-			ID:        order.ID,
-			UserID:    order.UserID,
-			Products:  productsInfo,
-			Total:     order.Total,
-			Status:    order.Status,
-			OrderedAt: order.OrderedAt,
-		})
+		// 注文データを直接追加
+		orders = append(orders, order)
 	}
 
 	if err := cursor.Err(); err != nil {
@@ -141,14 +103,15 @@ func AddToOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// トークンを検証
 	claims, err := ValidateJWT(tokenString)
 	if err != nil {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
 	}
-
 	userID := claims.UserID
 
+	// リクエストボディのデコード
 	var order models.Order
 	err = json.NewDecoder(r.Body).Decode(&order)
 	if err != nil {
