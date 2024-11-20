@@ -1,21 +1,19 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:frontend/models/order.dart';
 import 'package:intl/intl.dart'; // DateFormatのために必要
+import 'package:http/http.dart' as http;
+
 import 'product_detail_page.dart';
+import '../utils/config.dart';
+import '../models/product.dart';
 
 class OrderHistoryDetailPage extends StatelessWidget {
-  final String orderId;
-  final String status;
-  final double totalAmount;
-  final DateTime orderedAt;
-  final List<Map<String, dynamic>> products; // 商品のリストを受け取る
+  final Order order;
 
   const OrderHistoryDetailPage({
     Key? key,
-    required this.orderId,
-    required this.status,
-    required this.totalAmount,
-    required this.orderedAt,
-    required this.products,
+    required this.order,
   }) : super(key: key);
 
   @override
@@ -32,7 +30,7 @@ class OrderHistoryDetailPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Order ID: $orderId',
+              'Order ID: ${order.id}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18.0,
@@ -41,7 +39,7 @@ class OrderHistoryDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 8.0),
             Text(
-              'Status: $status',
+              'Status: ${order.status}',
               style: const TextStyle(
                 fontSize: 16.0,
                 color: Colors.grey,
@@ -49,7 +47,7 @@ class OrderHistoryDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 8.0),
             Text(
-              'Total Amount: ￥${totalAmount.toStringAsFixed(0)}',
+              'Total Amount: ￥${order.totalAmount.toStringAsFixed(0)}',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20.0,
@@ -58,7 +56,7 @@ class OrderHistoryDetailPage extends StatelessWidget {
             ),
             const SizedBox(height: 8.0),
             Text(
-              'Ordered At: ${dateFormat.format(orderedAt)}',
+              'Ordered At: ${order.orderedAt != null ? dateFormat.format(order.orderedAt!) : 'N/A'}',
               style: const TextStyle(
                 fontSize: 14.0,
                 color: Colors.black54,
@@ -76,10 +74,10 @@ class OrderHistoryDetailPage extends StatelessWidget {
             const SizedBox(height: 8.0),
             Expanded(
               child: ListView.builder(
-                itemCount: products.length,
+                itemCount: order.orderProduct.length,
                 itemBuilder: (context, index) {
-                  final product = products[index];
-                  print(product);
+                  final productData = order.orderProduct[index];
+
                   return Card(
                     elevation: 4,
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -87,30 +85,35 @@ class OrderHistoryDetailPage extends StatelessWidget {
                       leading:
                           const Icon(Icons.shopping_cart, color: Colors.blue),
                       title: Text(
-                        product['name'],
+                        productData.product.name,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      subtitle: Text('Quantity: ${product['quantity']}'),
+                      subtitle: Text('Quantity: ${productData.quantity}'),
                       trailing: Text(
-                        '￥${(product['price'] * product['quantity']).toStringAsFixed(0)}',
+                        '￥${(productData.product.price * productData.quantity).toStringAsFixed(0)}',
                         style: const TextStyle(
                           color: Colors.green,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       // todo: tap時の詳細ページ遷移
-                      // onTap: () {
-                      //   // Navigate to the product detail page
-                      //   Navigator.push(
-                      //     context,
-                      //     MaterialPageRoute(
-                      //       builder: (context) =>
-                      //           ProductDetailPage(product: product),
-                      //     ),
-                      //   );
-                      // },
+                      onTap: () async {
+                        try {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProductDetailPage(
+                                product: productData.product,
+                                showAddToCartButton: false,
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          print('Error ${e}');
+                        }
+                      },
                     ),
                   );
                 },

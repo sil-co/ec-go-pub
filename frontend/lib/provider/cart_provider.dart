@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/models/order.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../utils/auth_service.dart';
 import '../utils/config.dart';
+import '../models/product.dart';
 
 class CartProvider with ChangeNotifier {
-  final List<Map<String, dynamic>> _cartItems = [];
+  final List<OrderProduct> _cartItems = [];
+  List<OrderProduct> get cartItems => _cartItems;
   final String cartsApiUrl = '${Config.apiUrl}/carts';
   final String cartApiUrl = '${Config.apiUrl}/cart';
   final AuthService authService = AuthService();
 
-  List<Map<String, dynamic>> get cartItems => _cartItems;
-
-  Future<void> addToCart(Map<String, dynamic> product) async {
+  Future<void> addToCart(Product product) async {
     final token = await authService.getToken();
     if (token == null) {
       throw Exception('No token found');
     }
-
-    final products = {
-      'productId': product['id'], // 商品IDを指定
+    final cartProducts = {
+      'product': product.toJson(), // 商品IDを指定
       'quantity': 1 // 数量を指定
     };
 
@@ -31,12 +31,11 @@ class CartProvider with ChangeNotifier {
         'Content-Type': 'application/json',
         'Authorization': token,
       },
-      body: jsonEncode(products),
+      body: jsonEncode(cartProducts),
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       // カートへの追加成功
-      // _cartItems.add(product);
       await getCarts();
       notifyListeners(); // リスナーに通知してUIを更新
     } else {
@@ -45,12 +44,7 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  // void removeFromCart(Map<String, dynamic> product) {
-  //   _cartItems.remove(product);
-  //   notifyListeners();
-  // }
-
-  Future<void> removeFromCart(Map<String, dynamic> product) async {
+  Future<void> removeFromCart(OrderProduct productData) async {
     try {
       final token = await authService.getToken();
       if (token == null) {
@@ -59,7 +53,7 @@ class CartProvider with ChangeNotifier {
 
       // クエリパラメータに商品IDと数量を追加
       final url = Uri.parse(
-          '$cartApiUrl?productId=${product['productId']}&quantity=${product['quantity']}');
+          '$cartApiUrl?productId=${productData.product.id}&quantity=${productData.quantity}');
 
       final response = await http.delete(
         url,
@@ -110,7 +104,7 @@ class CartProvider with ChangeNotifier {
   int get itemLength => _cartItems.length;
 
   int get itemCount =>
-      _cartItems.fold<int>(0, (sum, item) => sum + (item['quantity'] as int));
+      _cartItems.fold<int>(0, (sum, item) => sum + (item.quantity));
 
   Future<void> getCarts() async {
     final token = await authService.getToken();
@@ -118,31 +112,48 @@ class CartProvider with ChangeNotifier {
       throw Exception('No token found');
     }
 
-    // final response = await http.get(Uri.parse('$cartApiUrl?userId=$userId'));
     final response = await http.get(Uri.parse(cartsApiUrl), headers: {
       'Content-Type': 'application/json',
       'Authorization': token,
     });
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final productData = jsonDecode(response.body);
-      _cartItems.clear(); // 既存のアイテムをクリア
-      // productData が空の場合、何も追加せずにreturn
-      if (productData is! List || productData.isEmpty) {
-        notifyListeners(); // UIを更新
-        return;
+      final cartData = jsonDecode(response.body);
+
+      if (cartData is! Map<String, dynamic>) {
+        throw Exception('Unexpected response format');
       }
 
-      // productDetailsが返ってきた場合の処理
-      for (var product in productData) {
-        _cartItems.add({
-          'productId': product['productID'], // カートに登録されている商品のID
-          'quantity': product['quantity'], // カートに登録されている商品の数量
-          'name': product['name'], // 商品名
-          'description': product['description'], // 商品の説明
-          'price': product['price'], // 商品の価格
-          'stock': product['stock'], // 在庫数
-        });
+      _cartItems.clear(); // 既存のアイテムをクリア
+
+      // productsリストを取得
+      final cartProducts = cartData['cartProduct'];
+      if (cartProducts is! List) {
+        notifyListeners(); // UIを更新
+        return; // productsがリストでなければ終了
       }
+
+      for (var productEntry in cartProducts) {
+        if (productEntry is! Map<String, dynamic>) {
+          continue; // productEntryがMapでなければスキップ
+        }
+
+        final product = productEntry['product'];
+        if (product is! Map<String, dynamic>) {
+          continue; // productがMapでなければスキップ
+        }
+
+        final productData = Product.fromJson(product);
+
+        // OrderProductのインスタンスを作成して_cartItemsに追加
+        final orderProduct = OrderProduct(
+          product: productData, // Productのリストを作成
+          quantity: productEntry['quantity'],
+        );
+
+        _cartItems.add(orderProduct);
+      }
+
       notifyListeners(); // UIを更新
     } else {
       // エラー処理

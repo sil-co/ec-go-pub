@@ -6,14 +6,14 @@ import (
 )
 
 type Cart struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID    primitive.ObjectID `bson:"userID" json:"userID"`
-	Products  []CartProduct      `bson:"products" json:"products"`
-	CreatedAt primitive.DateTime `bson:"createdAt" json:"createdAt"`
-	UpdatedAt primitive.DateTime `bson:"updatedAt" json:"updatedAt"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID      primitive.ObjectID `bson:"userID" json:"userID"`
+	CartProduct []CartProduct      `bson:"cartProduct" json:"cartProduct"`
+	CreatedAt   primitive.DateTime `bson:"createdAt" json:"createdAt"`
+	UpdatedAt   primitive.DateTime `bson:"updatedAt" json:"updatedAt"`
 }
 
 type CartProduct struct {
-	ProductID primitive.ObjectID `bson:"productID" json:"productID"`
-	Quantity  int                `bson:"quantity" json:"quantity"`
+	Product  Product `bson:"product" json:"product"`
+	Quantity int     `bson:"quantity" json:"quantity"`
 }

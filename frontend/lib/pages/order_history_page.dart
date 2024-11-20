@@ -7,34 +7,7 @@ import '../components/app_drower.dart';
 import '../utils/auth_service.dart';
 import '../utils/config.dart';
 import 'order_history_detail_page.dart';
-
-// Order model to parse API response
-class Order {
-  final String id;
-  final List<dynamic> products;
-  final double totalAmount;
-  final String status;
-  final DateTime orderedAt;
-
-  Order({
-    required this.id,
-    required this.products,
-    required this.totalAmount,
-    required this.status,
-    required this.orderedAt,
-  });
-
-  factory Order.fromJson(Map<String, dynamic> json) {
-    return Order(
-      id: json['id'],
-      products: json['products'],
-      totalAmount: json['totalAmount'].toDouble(),
-      status: json['status'],
-      // orderedAt: DateTime.parse(json['orderedAt']['\$date']),
-      orderedAt: DateTime.parse(json['orderedAt']),
-    );
-  }
-}
+import '../models/order.dart';
 
 // OrderHistoryPage widget
 class OrderHistoryPage extends StatefulWidget {
@@ -150,7 +123,8 @@ class OrderCard extends StatelessWidget {
             const SizedBox(height: 8.0),
             Text('Total Amount: ￥${order.totalAmount.toStringAsFixed(0)}'),
             const SizedBox(height: 8.0),
-            Text('Ordered At: ${dateFormat.format(order.orderedAt)}'),
+            Text(
+                'Ordered At: ${order.orderedAt != null ? dateFormat.format(order.orderedAt!) : 'N/A'}'),
             const SizedBox(height: 12.0),
             ElevatedButton(
               onPressed: () {
@@ -158,17 +132,7 @@ class OrderCard extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => OrderHistoryDetailPage(
-                      orderId: order.id.toString(),
-                      status: order.status,
-                      totalAmount: order.totalAmount,
-                      orderedAt: order.orderedAt,
-                      products: order.products.map((product) {
-                        return {
-                          'name': product['product']['name'],
-                          'quantity': product['quantity'],
-                          'price': product['product']['price'],
-                        };
-                      }).toList(),
+                      order: order,
                     ),
                   ),
                 );

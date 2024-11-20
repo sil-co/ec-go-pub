@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:frontend/models/product.dart';
 import 'package:http/http.dart' as http;
 
 import '../components/app_drower.dart';
@@ -9,7 +10,7 @@ import '../utils/config.dart';
 import '../components/image_upload_screen.dart';
 
 class ProductFormPage extends StatefulWidget {
-  final Map<String, dynamic>? product;
+  final Product? product;
 
   const ProductFormPage({Key? key, this.product}) : super(key: key);
 
@@ -21,7 +22,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late GlobalKey<ImageUploadScreenState> _imageUploadKey;
   late ImageUploadScreen _imageUploadScreen; // ImageUploadScreen のインスタンスを保持
   String? _imageId;
-  String? imageUrl;
+  String? _imageUrl;
   final _formKey = GlobalKey<FormState>();
 
   // 各フィールド用コントローラー
@@ -38,33 +39,16 @@ class _ProductFormPageState extends State<ProductFormPage> {
     super.initState();
     _imageUploadKey = GlobalKey<ImageUploadScreenState>();
     if (widget.product != null) {
-      _nameController.text = widget.product!['name'] ?? '';
-      _descriptionController.text = widget.product!['description'] ?? '';
-      _priceController.text = widget.product!['price']?.toString() ?? '';
-      _stockController.text = widget.product!['stock']?.toString() ?? '';
-      _categoryController.text = widget.product!['category'] ?? '';
+      _nameController.text = widget.product!.name ?? '';
+      _descriptionController.text = widget.product!.description ?? '';
+      _priceController.text = widget.product!.price?.toString() ?? '';
+      _stockController.text = widget.product!.stock?.toString() ?? '';
+      _categoryController.text = widget.product!.category ?? '';
 
-      // 初期画像URLを取得
-      imageUrl = (widget.product!['image'] != null &&
-              widget.product!['image']['Path'] != null &&
-              widget.product!['image']['Path'].isNotEmpty)
-          ? '${Config.apiUrl}/${widget.product!['image']['Path']}'
-              .replaceAll('\\', '/')
-          : null;
-
-      // ImageUploadScreen に初期URLを渡す
-      // setState(() {
-      //   _imageUploadKey = GlobalKey<ImageUploadScreenState>();
-      //   _imageUploadScreen = ImageUploadScreen(
-      //     key: _imageUploadKey,
-      //     initialImageUrl: imageUrl,
-      //   );
-      // });
-      // ImageUploadScreen に初期URLを渡す
-      // _imageUploadScreen = ImageUploadScreen(
-      //   key: _imageUploadKey,
-      //   initialImageUrl: imageUrl,
-      // );
+      _imageUrl = widget.product!.image?.path?.isNotEmpty == true
+          ? '${Config.apiUrl}/${widget.product!.image!.path}'
+          : 'assets/no_image.jpg';
+      _imageId = widget.product!.imageID;
     }
   }
 
@@ -83,7 +67,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
         final url = widget.product == null
             ? Uri.parse('${Config.apiUrl}/product')
-            : Uri.parse('${Config.apiUrl}/product/${widget.product!['id']}');
+            : Uri.parse('${Config.apiUrl}/product/${widget.product!.id}');
 
         final product = {
           "name": _nameController.text,
@@ -184,7 +168,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                     height: height, // Adjust height based on screen width
                     child: ImageUploadScreen(
                       key: _imageUploadKey,
-                      initialImageUrl: imageUrl,
+                      initialImageUrl: _imageUrl,
+                      initialImageID: _imageId,
                     ),
                   );
                 },

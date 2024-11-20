@@ -17,108 +17,103 @@ db.users.createIndex({ email: 1 }, { unique: true });
 // couponsコレクション: codeに一意インデックスを設定
 db.coupons.createIndex({ code: 1 }, { unique: true });
 
-// ユーザーデータの挿入
+// サンプルユーザーの挿入
 db.users.insertMany([
   {
-    username: "user1",
-    email: "user1@example.com",
-    password: "hashed_password1", // ハッシュ化されたパスワードを保存する想定
+    username: "john_doe",
+    email: "john.doe@example.com",
+    password: "hashed_password_1", // ここは実際のハッシュ化されたパスワードに置き換えてください
     role: "customer",
     createdAt: new Date(),
   },
   {
-    username: "admin",
+    username: "admin_user",
     email: "admin@example.com",
-    password: "hashed_password2",
+    password: "hashed_password_2", // ここも実際のハッシュ化されたパスワードに置き換えてください
     role: "admin",
     createdAt: new Date(),
   },
 ]);
 
-// 商品カテゴリの挿入
-db.categories.insertMany([
-  { name: "Electronics", description: "Electronics gadgets" },
-  { name: "Books", description: "Books and stationery" },
-  { name: "Clothing", description: "Apparel and accessories" },
-]);
-
-// 商品データの挿入
+// サンプル製品の挿入
 db.products.insertMany([
   {
-    userID: db.users.findOne({ username: "user1" })._id,
-    name: "Smartphone",
-    description: "Latest model with high specs",
-    price: 6999,
-    stock: 50,
+    userID: db.users.findOne({ username: "john_doe" })._id,
+    imageID: new ObjectId(), // 画像IDを適切に設定
+    name: "Example Product 1",
+    description: "This is an example product.",
+    price: 19.99,
+    stock: 100,
     category: "Electronics",
     createdAt: new Date(),
   },
   {
-    userID: db.users.findOne({ username: "user1" })._id,
-    name: "Novel",
-    description: "A best-selling novel",
-    price: 1999,
-    stock: 200,
-    category: "Books",
-    createdAt: new Date(),
-  },
-  {
-    userID: db.users.findOne({ username: "user1" })._id,
-    name: "T-Shirt",
-    description: "Comfortable cotton t-shirt",
-    price: 999,
-    stock: 100,
+    userID: db.users.findOne({ username: "john_doe" })._id,
+    imageID: new ObjectId(), // 画像IDを適切に設定
+    name: "Example Product 2",
+    description: "Another example product.",
+    price: 29.99,
+    stock: 50,
     category: "Clothing",
     createdAt: new Date(),
   },
 ]);
 
-// 注文データの挿入
+// サンプル注文の挿入
 db.orders.insertMany([
   {
-    userID: db.users.findOne({ username: "user1" })._id,
-    products: [
+    userID: db.users.findOne({ username: "john_doe" })._id,
+    orderProduct: [
       {
-        productID: db.products.findOne({ name: "Smartphone" })._id,
+        product: db.products.findOne({ name: "Example Product 1" }),
+        quantity: 2,
+      },
+    ],
+    total: 39.98,
+    status: "pending",
+    orderedAt: new Date(),
+  },
+  {
+    userID: db.users.findOne({ username: "admin_user" })._id,
+    orderProduct: [
+      {
+        product: db.products.findOne({ name: "Example Product 2" }),
         quantity: 1,
       },
-      { productID: db.products.findOne({ name: "Novel" })._id, quantity: 2 },
     ],
-    totalAmount: 739.97,
-    status: "pending",
+    total: 29.99,
+    status: "shipped",
     orderedAt: new Date(),
   },
 ]);
 
+// サンプルカートの挿入
 db.carts.insertMany([
   {
-    userID: db.users.findOne({ username: "user1" })._id, // カート所有者
+    userID: db.users.findOne({ username: "john_doe" })._id,
     products: [
-      { productID: db.products.findOne({ name: "T-Shirt" })._id, quantity: 2 },
-      { productID: db.products.findOne({ name: "Novel" })._id, quantity: 1 },
+      {
+        product: db.products.findOne({ name: "Example Product 1" }),
+        quantity: 1,
+      },
+      {
+        product: db.products.findOne({ name: "Example Product 2" }),
+        quantity: 2,
+      },
     ],
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-]);
-
-db.payments.insertMany([
   {
-    orderID: db.orders.findOne({ status: "pending" })._id,
-    amount: 739.97,
-    paymentMethod: "credit_card", // クレジットカード、PayPalなど
-    status: "completed",
-    paidAt: new Date(),
-  },
-]);
-
-db.coupons.insertMany([
-  {
-    code: "DISCOUNT10",
-    discountPercentage: 10,
-    validFrom: new Date("2024-10-01"),
-    validUntil: new Date("2024-12-31"),
-    isActive: true,
+    userID: db.users.findOne({ username: "admin_user" })._id,
+    products: [
+      {
+        product: db.products.findOne({ name: "Example Product 2" }),
+        quantity: 1,
+      },
+    ],
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 ]);
 

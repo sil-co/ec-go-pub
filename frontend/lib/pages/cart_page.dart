@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:frontend/models/order.dart';
+import 'package:frontend/models/product.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,31 +17,17 @@ class CartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<CartProvider>(context);
+
     final cartItems = cart.cartItems;
 
     double getTotalAmount() {
       double total = cartItems.fold(0.0, (sum, item) {
-        double price = item['price'] ?? 0.0;
-        int quantity = item['quantity'] ?? 1;
+        // 商品のリストの最初のアイテムを使って価格を取得
+        double price = item.product.price;
+        int quantity = item.quantity;
         return sum + (price * quantity);
       });
       return total.ceilToDouble(); // 合計を切り上げ
-    }
-
-    Future<bool> deleteCart(Map<String, dynamic> order) async {
-      try {
-        // orderからproductsを取得
-        final products = order['products'] as List<Map<String, dynamic>>;
-
-        // 各商品をカートから削除
-        for (var product in products) {
-          await cart.removeFromCart(product);
-        }
-
-        return true; // 成功した場合はtrueを返す
-      } catch (e) {
-        return false; // 失敗した場合はfalseを返す
-      }
     }
 
     return Scaffold(
@@ -60,7 +48,12 @@ class CartPage extends StatelessWidget {
                   child: ListView.builder(
                     itemCount: cart.itemLength,
                     itemBuilder: (context, index) {
-                      final product = cartItems[index];
+                      final productData = cartItems[index];
+                      final imageUrl = (productData
+                                  .product.image?.path?.isNotEmpty ??
+                              false)
+                          ? '${Config.apiUrl}/${productData.product.image?.path}'
+                          : 'assets/no_image.jpg';
                       return Card(
                         margin: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
@@ -71,23 +64,18 @@ class CartPage extends StatelessWidget {
                             height: 100, // 高さを固定
                             decoration: BoxDecoration(
                               image: DecorationImage(
-                                image: AssetImage(product['imageUrl'] ??
-                                    'assets/no_image.jpg'),
+                                image: NetworkImage(
+                                    imageUrl), // AssetImage -> NetworkImageに変更
                                 fit: BoxFit.contain,
                               ),
                             ),
                           ),
-                          // title: Text(
-                          //   product['name'],
-                          //   style: const TextStyle(
-                          //       fontWeight: FontWeight.bold, fontSize: 16),
-                          // ),
                           subtitle: Column(
                             // RowからColumnに変更
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                product['name'],
+                                productData.product.name,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -98,7 +86,7 @@ class CartPage extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '￥${product['price'].toStringAsFixed(0)}',
+                                    '￥${productData.product.price.toStringAsFixed(0)}',
                                     style: const TextStyle(
                                       color: Colors.green,
                                       fontSize: 14,
@@ -107,7 +95,7 @@ class CartPage extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 10), // スペースを追加
                                   Text(
-                                    'Quantity: ${product['quantity']}',
+                                    'Quantity: ${productData.quantity}',
                                     style: const TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey, // 色を変えて目立たなくする
@@ -126,7 +114,7 @@ class CartPage extends StatelessWidget {
                               //       const Icon(Icons.remove, color: Colors.red),
                               //   onPressed: () {
                               //     // 数量を減らす処理
-                              //     // cart.decreaseQuantity(product);
+                              //     // cart.decreaseQuantity(productData);
                               //   },
                               // ),
                               // IconButton(
@@ -134,7 +122,7 @@ class CartPage extends StatelessWidget {
                               //       const Icon(Icons.add, color: Colors.green),
                               //   onPressed: () {
                               //     // 数量を増やす処理
-                              //     // cart.increaseQuantity(product);
+                              //     // cart.increaseQuantity(productData);
                               //   },
                               // ),
                               IconButton(
@@ -142,7 +130,7 @@ class CartPage extends StatelessWidget {
                                     color: Colors.red),
                                 onPressed: () {
                                   // 商品をカートから削除する処理
-                                  cart.removeFromCart(product);
+                                  cart.removeFromCart(productData);
                                 },
                               ),
                             ],
@@ -182,11 +170,13 @@ class CartPage extends StatelessWidget {
                     onPressed: () async {
                       // 購入処理のロジックを追加
                       // Todo: Stripe処理を追加
-                      final order = {
-                        "products": getProductsForOrder(cartItems),
-                        "totalAmount": getTotalAmount(),
-                        "status": "Pending"
-                      };
+                      final order = Order(
+                          id: '', // サーバーで自動生成される場合は空文字列を使用
+                          totalAmount: getTotalAmount(),
+                          status: 'Pending',
+                          // orderedAt: DateTime.now(),
+                          // orderedAt: DateTime.now().toUtc(),
+                          orderProduct: cartItems);
                       final submitStatus = await submitOrder(order);
                       if (submitStatus) {
                         await cart.deleteCarts();
@@ -218,15 +208,15 @@ class CartPage extends StatelessWidget {
 // カートアイテムから必要な情報を抽出する関数
   List<Map<String, dynamic>> getProductsForOrder(
       List<Map<String, dynamic>> cartItems) {
-    return cartItems.map((product) {
+    return cartItems.map((productData) {
       return {
-        'productId': product['productId'], // productIdのみ
-        'quantity': product['quantity'], // quantityのみ
+        'productId': productData['product'].id, // productIdのみ
+        'quantity': productData['quantity'], // quantityのみ
       };
     }).toList();
   }
 
-  Future<bool> submitOrder(Map<String, dynamic> order) async {
+  Future<bool> submitOrder(Order order) async {
     final token = await authService.getToken();
     if (token == null) {
       throw Exception('No token found');
@@ -238,10 +228,11 @@ class CartPage extends StatelessWidget {
     };
 
     try {
+      final encodedJson = jsonEncode(order);
       final response = await http.post(
         Uri.parse(url),
         headers: headers,
-        body: jsonEncode(order),
+        body: encodedJson,
       );
       return response.statusCode < 300 && response.statusCode >= 200;
     } catch (e) {

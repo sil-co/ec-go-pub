@@ -11,8 +11,10 @@ import '../utils/auth_service.dart';
 
 class ImageUploadScreen extends StatefulWidget {
   final String? initialImageUrl; // 初期画像URLを受け取る
+  final String? initialImageID;
 
-  ImageUploadScreen({Key? key, this.initialImageUrl}) : super(key: key);
+  ImageUploadScreen({Key? key, this.initialImageUrl, this.initialImageID})
+      : super(key: key);
 
   @override
   ImageUploadScreenState createState() => ImageUploadScreenState();
@@ -25,15 +27,18 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
   String? _imageId;
   final picker = ImagePicker();
   final AuthService authService = AuthService();
+  bool hasPickUped = false;
   bool isUploading = false; // アップロード中かどうか
   bool isUploaded = false; // アップロードが成功したかどうか
 
   @override
   void initState() {
     super.initState();
-
     if (widget.initialImageUrl != null) {
       _loadInitialImage(widget.initialImageUrl!); // 初期画像を読み込む
+    }
+    if (widget.initialImageID != null) {
+      _imageId = widget.initialImageID;
     }
   }
 
@@ -65,6 +70,10 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
     } else {
       print('No image selected.');
     }
+
+    setState(() {
+      hasPickUped = true;
+    });
   }
 
   Future uploadImage() async {
@@ -199,7 +208,7 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
                       child: Text(
                         isUploaded
                             ? "Uploaded"
-                            : (isUploading ? "Uploading..." : "Pick Image"),
+                            : (isUploading ? "Uploading..." : "Pickup Image"),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -211,7 +220,9 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
                   SizedBox(
                     width: 200, // 横幅を指定
                     child: ElevatedButton(
-                      onPressed: isUploading || isUploaded ? null : uploadImage,
+                      onPressed: isUploading || isUploaded || !hasPickUped
+                          ? null
+                          : uploadImage,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.greenAccent,
                         padding:
@@ -221,9 +232,13 @@ class ImageUploadScreenState extends State<ImageUploadScreen> {
                         ),
                       ),
                       child: Text(
-                        isUploaded
-                            ? "Uploaded"
-                            : (isUploading ? "Uploading..." : "Upload Image"),
+                        !hasPickUped
+                            ? "Pick up image"
+                            : (isUploaded
+                                ? "Uploaded"
+                                : (isUploading
+                                    ? "Uploading..."
+                                    : "Upload Image")),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

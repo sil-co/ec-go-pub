@@ -5,15 +5,15 @@ import (
 )
 
 type Order struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID    primitive.ObjectID `bson:"userID" json:"userID"`
-	Products  []OrderProduct     `json:"products"`
-	Total     float64            `json:"totalAmount"`
-	Status    string             `json:"status"`
-	OrderedAt primitive.DateTime `json:"orderedAt"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID       primitive.ObjectID `bson:"userID" json:"userID"`
+	OrderProduct []OrderProduct     `json:"orderProduct"`
+	Total        float64            `json:"totalAmount"`
+	Status       string             `json:"status"`
+	OrderedAt    primitive.DateTime `json:"orderedAt"`
 }
 
 type OrderProduct struct {
-	ProductID primitive.ObjectID `json:"productID"`
-	Quantity  int                `json:"quantity"`
+	Product  Product `json:"product"`
+	Quantity int     `json:"quantity"`
 }

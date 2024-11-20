@@ -10,6 +10,7 @@ import '../components/app_drower.dart';
 import '../utils/snackbar_utils.dart';
 import '../utils/auth_service.dart';
 import '../utils/config.dart';
+import '../models/product.dart';
 
 // 商品一覧ページ
 class ProductsPage extends StatefulWidget {
@@ -23,11 +24,11 @@ class ProductsPage extends StatefulWidget {
 }
 
 class _ProductsPageState extends State<ProductsPage> {
-  late Future<List<dynamic>> _productsFuture;
+  late Future<List<Product>> _productsFuture;
   @override
   void initState() {
     super.initState();
-    _productsFuture = getProducts(); // 初回データ取得
+    _productsFuture = getAllOrMyProducts(); // 初回データ取得
   }
 
   // final bool isMine;
@@ -44,20 +45,22 @@ class _ProductsPageState extends State<ProductsPage> {
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), // パディング
   );
 
-  Future<List<dynamic>> fetchProducts() async {
+  Future<List<Product>> getProducts() async {
     final response = await http.get(Uri.parse('${Config.apiUrl}/products/all'));
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      return jsonList.map((json) => Product.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load products');
     }
   }
 
-  Future<List<dynamic>> fetchMyProducts() async {
+  Future<List<Product>> getMyProducts() async {
     final token = await authService.getToken();
     if (token == null) {
       throw Exception('No token found');
     }
+
     final response = await http.get(
       Uri.parse('${Config.apiUrl}/products'),
       headers: {
@@ -65,26 +68,29 @@ class _ProductsPageState extends State<ProductsPage> {
         'Authorization': token,
       },
     );
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final List<dynamic>? products =
-          jsonDecode(response.body) as List<dynamic>?;
 
-      if (products == null) {
-        return [];
-      }
-      return products; // ここでは非 nullable 型として扱える
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      // JSONデコード結果をリストに変換
+      final List<dynamic> jsonList = jsonDecode(response.body);
+      // List<dynamic>をList<Product>に変換
+      return jsonList.map((json) => Product.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load my products: ${response.statusCode}');
     }
   }
 
-  Future<List<dynamic>> getProducts() {
-    return widget.isMine ? fetchMyProducts() : fetchProducts();
+  Future<List<Product>> getAllOrMyProducts() async {
+    try {
+      return widget.isMine ? await getMyProducts() : await getProducts();
+    } catch (e) {
+      print(e);
+      return <Product>[]; // Explicitly return an empty List<Product>
+    }
   }
 
   void _refreshProducts() {
     setState(() {
-      _productsFuture = getProducts(); // 再取得
+      _productsFuture = getAllOrMyProducts(); // 再取得
     });
   }
 
@@ -115,7 +121,7 @@ class _ProductsPageState extends State<ProductsPage> {
         throw Exception('No token found');
       }
 
-      final url = Uri.parse('${Config.apiUrl}/product/${product!['id']}');
+      final url = Uri.parse('${Config.apiUrl}/product/${product!.id}');
 
       final response = await http.delete(
         url,
@@ -144,7 +150,7 @@ class _ProductsPageState extends State<ProductsPage> {
         title: Text(widget.isMine ? 'My Products' : 'Products'),
       ),
       drawer: const AppDrawer(),
-      body: FutureBuilder<List<dynamic>>(
+      body: FutureBuilder<List<Product>>(
         future: _productsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -170,10 +176,8 @@ class _ProductsPageState extends State<ProductsPage> {
                 itemBuilder: (context, index) {
                   final product = snapshot.data![index];
 
-                  final imageUrl = (product['image'] != null &&
-                          product['image']['Path'] != null &&
-                          product['image']['Path'].isNotEmpty)
-                      ? '${Config.apiUrl}/${product['image']['Path']}'
+                  final imageUrl = product.image?.path?.isNotEmpty == true
+                      ? '${Config.apiUrl}/${product.image!.path}'
                       : 'assets/no_image.jpg';
 
                   return Container(
@@ -202,7 +206,7 @@ class _ProductsPageState extends State<ProductsPage> {
                             child: Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Text(
-                                product['name'],
+                                product.name,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -219,7 +223,7 @@ class _ProductsPageState extends State<ProductsPage> {
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 8.0),
                               child: Text(
-                                '￥${product['price'].toStringAsFixed(0)}',
+                                '￥${product.price.toStringAsFixed(0)}',
                                 style: const TextStyle(
                                   color: Colors.green,
                                   fontSize: 12,
@@ -237,8 +241,11 @@ class _ProductsPageState extends State<ProductsPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        ProductDetailPage(product: product),
+                                    builder: (context) => ProductDetailPage(
+                                      product: product,
+                                      showAddToCartButton:
+                                          widget.isMine ? false : true,
+                                    ),
                                   ),
                                 );
                               },
@@ -336,6 +343,7 @@ class _ProductsPageState extends State<ProductsPage> {
                                     showSuccessSnackbar(
                                         context, 'Added to Cart');
                                   } catch (e) {
+                                    print(e);
                                     showErrorSnackbar(
                                         context, 'Failed to add to cart');
                                   }
