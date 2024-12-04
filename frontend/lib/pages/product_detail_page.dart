@@ -46,12 +46,17 @@ class ProductDetailPage extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(15),
-                  child: Image.network(
-                    imageUrl,
-                    height: 250,
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.network(imageUrl,
+                      height: 250, width: double.infinity, fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                    // エラー時にローカル画像を表示
+                    return Image.asset(
+                      'assets/no_image.jpg',
+                      height: 250,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    );
+                  }),
                 ),
                 const SizedBox(height: 16),
                 Text(

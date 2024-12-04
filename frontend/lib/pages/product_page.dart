@@ -194,10 +194,16 @@ class _ProductsPageState extends State<ProductsPage> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.vertical(
                                   top: Radius.circular(10)),
-                              child: Image.network(
-                                imageUrl,
-                                width: double.infinity,
-                                fit: BoxFit.contain,
+                              child: Image.network(imageUrl,
+                                width: double.infinity, fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // エラー時にローカル画像を表示
+                                  return Image.asset(
+                                    'assets/no_image.jpg',
+                                    width: double.infinity,
+                                    fit: BoxFit.contain,
+                                  );
+                                }
                               ),
                             ),
                           ),
