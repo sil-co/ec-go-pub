@@ -11,10 +11,10 @@ then
     echo "Installing Flutter..."
     git clone https://github.com/flutter/flutter.git -b stable ~/flutter
     echo 'export PATH="$PATH:$HOME/flutter/bin"' >> ~/.bashrc
-    source ~/.bashrc
     flutter --version
 else
     echo "Flutter is already installed."
+    source ~/.bashrc
 fi
 
 # Goのインストール
