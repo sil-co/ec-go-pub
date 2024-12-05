@@ -76,7 +76,7 @@ echo "Configuring Nginx..."
 sudo tee /etc/nginx/sites-available/flutter_site <<EOL
 server {
     listen 80;
-    server_name 133.18.232.127;
+    server_name 133.18.200.244;
 
     root /var/www/html/ec-app/frontend/build/web;
     index index.html index.htm;

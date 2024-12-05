@@ -7,7 +7,7 @@
     - [ローカルPC上]`server/.env`内の`$SSH_PRIVATE_KEY`をコピーして貼り付け保存
     - [ローカルPC上]`~/.ssh/for_vps`の権限変更: `chmod 600 ~/.ssh/for_vps`
 - [ローカルPC上]`ec-app/server/scripts/deploy.sh`の`server_name`の値を該当のIPアドレスに変更する
-- [ローカルPC上]ssh login: `ssh your_user@your_server_ip -i ~/.ssh/id_rsa`
+- [ローカルPC上]ssh login: `ssh your_user@your_server_ip -i ~/.ssh/for_vps`
 - [ローカルPC上]`ec-app/frontend/lib/utils/config.dart`を本番環境用のIPに変更しプッシュ
 - [リモートサーバー上]スクリプトファイル作成: `vim ~/deploy.sh`
 - [リモートサーバー上]中身は`scripts/deploy.sh`をコピーし貼り付け
