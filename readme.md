@@ -55,13 +55,13 @@ project/
 ### 2. データベースの起動
 
 ```bash
+cd backend/
 docker-compose up -d
 ```
 
 ### 3. バックエンドの起動
 
 ```bash
-cd backend/
 go run main.go
 ```
 
@@ -114,7 +114,7 @@ flutter run -d chrome
 ---
 
 ## 開発者
-
 [Shelner]   
-[X](https://x.com/shelnerX): https://x.com/shelnerX
-[Youtube](https://www.youtube.com/@shelpro): https://www.youtube.com/@shelpro
+[X](https://x.com/shelnerX) | 
+[Youtube](https://www.youtube.com/@shelpro) | 
+[Zenn](https://zenn.dev/shelpro) | 
