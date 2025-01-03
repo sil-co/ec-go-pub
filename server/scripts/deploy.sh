@@ -34,17 +34,17 @@ fi
 
 # GitHubリポジトリをクローンまたは更新
 echo "Cloning or updating the GitHub repository..."
-if [ -d "/var/www/html/ec-app" ]; then
+if [ -d "/var/www/html/ec-go-pub" ]; then
     echo "Project directory already exists. Pulling latest changes..."
-    cd /var/www/html/ec-app
+    cd /var/www/html/ec-go-pub
     git config --global core.autocrlf true
     git config core.fileMode false
-    git config --global --add safe.directory /var/www/html/ec-app
+    git config --global --add safe.directory /var/www/html/ec-go-pub
     GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git pull
-    cd /var/www/html/ec-app/backend
+    cd /var/www/html/ec-go-pub/backend
 else
-    GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git clone git@github.com:shelner/ec-app.git /var/www/html/ec-app
-    cd /var/www/html/ec-app/backend
+    GIT_SSH_COMMAND="ssh -i ~/.ssh/for_vps" git clone git@github.com:sil-co/ec-go-pub.git /var/www/html/ec-go-pub
+    cd /var/www/html/ec-go-pub/backend
 fi
 
 # Docker Composeを使ってアプリケーションを起動
@@ -53,7 +53,7 @@ docker-compose up -d
 
 # Goアプリケーションのビルドと実行
 echo "Building Go application..."
-cd /var/www/html/ec-app/backend
+cd /var/www/html/ec-go-pub/backend
 go get
 go mod tidy
 go build -o app main.go
@@ -64,7 +64,7 @@ echo "Go is running..."
 
 # Flutterウェブアプリのビルド
 echo "Building Flutter web application..."
-cd /var/www/html/ec-app/frontend
+cd /var/www/html/ec-go-pub/frontend
 flutter pub get
 flutter build web
 
@@ -76,9 +76,9 @@ echo "Configuring Nginx..."
 sudo tee /etc/nginx/sites-available/flutter_site <<EOL
 server {
     listen 80;
-    server_name 133.18.200.244;
+    server_name your_domain_or_ip;
 
-    root /var/www/html/ec-app/frontend/build/web;
+    root /var/www/html/ec-go-pub/frontend/build/web;
     index index.html index.htm;
 
     # フロントエンドへのリクエスト
